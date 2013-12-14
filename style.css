@@ -1,0 +1,71 @@
+body {
+    background: #f4f8fc;
+}
+
+h1 {
+    font-size: 60px;
+    margin-top: 0px;
+}
+
+h2 {
+    font-size: 30px;
+    margin-top: 0px;
+}
+
+ul {
+    margin-left: 0px;
+    padding: 0;
+    margin-right: auto;
+}
+
+li {
+    margin-right: 8px;
+    width: 120px;
+    text-align: center;
+    display: inline-block;
+}
+
+#startButton {
+    width: 100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.button:hover {
+    background-color: #d7dd31;
+}
+
+.button {
+    padding: 8px;
+    background-color: #e2ea36;
+    font-size: 20px;
+}
+
+#today_so_far {
+    font-family: sans-serif;
+}
+
+.timerDiv {
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #ea6c55;
+    color: #FFFFFF;
+    font-size: 50px;
+    width: 220px;
+    text-align: center;
+    font-family: sans-serif;
+}
+
+#otherTextBox {
+    display: none;
+    font-family: Helvetica;
+    font-size: 16px;
+    background: dimgray;
+    border: none;
+    color: white
+}
+
+#why_stop{
+    display: none;
+}
