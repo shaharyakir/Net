@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html  lang="en-US">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <script src="parse-1.2.13.js"></script>
 <script src="stopwatch.js"></script>
 
 
 <head>
-    <title>d</title>
+    <title>Test</title>
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body onload="show()">
@@ -14,16 +15,16 @@
 
     <h2>Project: Javascript Development</h2>
 
-
 </div>
 
 <div id="startTheDay">
     <h3>Start the day</h3>
     <span id="todayDate">Today: </span><br/>
-    <span>Set your goal for today: </span>
-    <input style="font-size: 30px; font-family: Helvetica" id="goalInput" type="range" onchange="updateGoalTIme(this)" value="3600" min="1800" max="36000" step="1800">
+    <span id="goalTitle"></span>
+    <input style="font-size: 30px; font-family: Helvetica" id="goalInput" type="range" onchange="updateGoalTime(this.value)" value="3600" min="1800" max="36000" step="1800">
     <span id="goalTime">01:00</span>
     <span id="setDayGoal" onclick="setDayGoal()" class="button">Set</span>
+    <span id="updateDayGoal" onclick="toggleGoalElementsVisibility(true)" style="display: none" class="button">Update Daily Goal</span>
 </div>
 
 <div id="today">
@@ -52,7 +53,7 @@
         <textarea id="otherTextBox" rows="5" cols="50">
         </textarea>
     </div>
-    <div id="this_week" onclick="buildWeekTable()">
+    <div id="this_week" onclick="queryDaysDataForTable()">
 
         <table id="this_week_table">
             <thead>

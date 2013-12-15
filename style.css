@@ -39,6 +39,8 @@ li {
     padding: 8px;
     background-color: #e2ea36;
     font-size: 20px;
+    cursor:pointer;
+
 }
 
 #today_so_far {
@@ -46,6 +48,7 @@ li {
 }
 
 .timerDiv {
+    cursor: default;
     margin-top: 20px;
     margin-left: auto;
     margin-right: auto;
