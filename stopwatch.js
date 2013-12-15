@@ -246,6 +246,7 @@ function show() {
     time.innerHTML = formatTime(x.time()); // set the timer initial time
 
     isDailyGoalSet();
+    queryDaysDataForTable();
 }
 
 /*

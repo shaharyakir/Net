@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html  lang="en-US">
+<html lang="en-US">
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <script src="parse-1.2.13.js"></script>
 <script src="stopwatch.js"></script>
@@ -10,66 +10,67 @@
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body onload="show()">
-<div id="title">
-    <h1 style="margin-bottom: 0">Net Time</h1>
+<div id="outerBox">
+    <div id="innerBox">
+        <div id="title">
+            <h1 style="margin-bottom: 0">Net Time</h1>
 
-    <h2>Project: Javascript Development</h2>
+            <h2>Project: Javascript Development</h2>
 
-</div>
-
-<div id="startTheDay">
-    <h3>Start the day</h3>
-    <span id="todayDate">Today: </span><br/>
-    <span id="goalTitle"></span>
-    <input style="font-size: 30px; font-family: Helvetica" id="goalInput" type="range" onchange="updateGoalTime(this.value)" value="3600" min="1800" max="36000" step="1800">
-    <span id="goalTime">01:00</span>
-    <span id="setDayGoal" onclick="setDayGoal()" class="button">Set</span>
-    <span id="updateDayGoal" onclick="toggleGoalElementsVisibility(true)" style="display: none" class="button">Update Daily Goal</span>
-</div>
-
-<div id="today">
-
-
-    <div id="today_so_far"></div>
-    <span id="todayGoal"></span>
-</div>
-
-<div id="center_section" style="display: none">
-
-    <div style="text-align: center" class="button" id="startButton" onclick="start()">Start</div>
-    <div class="timerDiv" id="time"></div>
-    <div id="why_stop">
-        <div style="text-align: left;padding: 0px;margin-bottom: 12px;font-size: 22px;font-weight: bold">Why did you
-            stop?
         </div>
 
-        <ul id="stopReasonButtons">
-            <li class="button">Internet</li>
-            <li class="button">Food/Bathroom</li>
-            <li class="button">Toilet</li>
-            <li class="button" onclick="displayOtherTextBox()">Other</li>
-        </ul>
+        <div id="goalSection" class="section">
+            <span id="todayDate">Today: </span><br/>
+            <span id="goalTitle"></span>
+            <input style="font-size: 30px; font-family: Helvetica" id="goalInput" type="range"
+                   onchange="updateGoalTime(this.value)" value="3600" min="1800" max="36000" step="1800">
+            <span id="goalTime">01:00</span>
+            <span id="setDayGoal" onclick="setDayGoal()" class="button">Set</span>
+            <span id="updateDayGoal" onclick="toggleGoalElementsVisibility(true)" style="display: none" class="button">Update Daily Goal</span>
+            <br/>
+            <br/>
+        </div>
 
-        <textarea id="otherTextBox" rows="5" cols="50">
-        </textarea>
+        <div id="center_section" style="display: none">
+
+            <div style="text-align: center" class="button" id="startButton" onclick="start()">Start</div>
+            <div class="timerDiv" id="time"></div>
+            <div id="today_so_far"></div>
+            <div id="why_stop">
+                <div style="text-align: left;padding: 0px;margin-bottom: 12px;font-size: 22px;font-weight: bold">Why did
+                    you
+                    stop?
+                </div>
+
+                <ul id="stopReasonButtons">
+                    <li class="button">Internet</li>
+                    <li class="button">Food/Bathroom</li>
+                    <li class="button">Toilet</li>
+                    <li class="button" onclick="displayOtherTextBox()">Other</li>
+                </ul>
+
+                <textarea id="otherTextBox" rows="5" cols="50">
+                </textarea>
+            </div>
+            <div class="section" id="this_week" onclick="queryDaysDataForTable()">
+
+                <table id="this_week_table">
+                    <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>How Long</th>
+                        <th>Goal</th>
+                        <th>Percentage</th>
+                    </tr>
+                    </thead>
+                    <tbody id="this_week_table_tbody">
+                    </tbody>
+                </table>
+
+            </div>
+
+        </div>
     </div>
-    <div id="this_week" onclick="queryDaysDataForTable()">
-
-        <table id="this_week_table">
-            <thead>
-            <tr>
-                <th>Day</th>
-                <th>How Long</th>
-                <th>Goal</th>
-                <th>Percentage</th>
-            </tr>
-            </thead>
-            <tbody id="this_week_table_tbody">
-            </tbody>
-        </table>
-
-    </div>
-
 </div>
 </body>
 </html>

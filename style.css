@@ -1,5 +1,6 @@
 body {
     background: #f4f8fc;
+    color: #57676e;
 }
 
 h1 {
@@ -37,6 +38,7 @@ li {
 
 .button {
     padding: 8px;
+    margin: 4px;
     background-color: #e2ea36;
     font-size: 20px;
     cursor:pointer;
@@ -57,7 +59,22 @@ li {
     font-size: 50px;
     width: 220px;
     text-align: center;
-    font-family: sans-serif;
+    font-family: 'OpenSans', sans-serif;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0),0 0 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #C3CCD0;
+
+
+}
+
+#innerBox{
+    background: #fff;
+    padding: 50px 100px;
+    margin: 30px;
+    font-family: 'OpenSans', sans-serif;
+    font-weight: 400;
+    border: 1px solid #C3CCD0;
+    font-size: 16px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0),0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 #otherTextBox {
@@ -71,4 +88,13 @@ li {
 
 #why_stop{
     display: none;
+}
+
+.section{
+    padding: 4px;
+    margin: 8px;
+    border-radius: 3px;
+    border: 1px solid #d5e0e4;
+    color: #333;
+    background: #f8f8f8;
 }
