@@ -110,28 +110,9 @@ function start() {
         x.start();
     }
     else {
-
-        var TestObject = Parse.Object.extend("Laps");
-        var testObject = new TestObject();
         var howLong = document.getElementById("time").innerHTML;
-        howLong = timeStringToSeconds(howLong);
-        testObject.save({length: howLong, date: getShortDate()}).then(function () {
-            var totalLength = 0;
 
-            var Laps = Parse.Object.extend("Laps");
-            var query = new Parse.Query(Laps);
-            query.equalTo("date", getShortDate());
-            query.find().then(function (results) {
-
-                    for (var i = 0; i < results.length; i++) {
-                        var object = results[i];
-                        totalLength += parseInt(object.get('length'));
-                    }
-                    document.getElementById("today_so_far").innerHTML = "Time spent: " + secondsToString(totalLength);
-                    queryDaysDataForTable();
-                }
-            );
-        });
+        saveLap(timeStringToSeconds($('#time').text()),'#startButton');
 
         stop();
         //  document.getElementById("why_stop").style.display = "block";
@@ -139,6 +120,32 @@ function start() {
 
     var newVal = button.innerHTML == "Start" ? "Stop" : "Start";
     button.innerHTML = newVal;
+}
+
+function saveLap(value,jqueryPressedElement,callback){
+    toggleLoading(jqueryPressedElement);
+    var TestObject = Parse.Object.extend("Laps");
+    var testObject = new TestObject();
+
+    testObject.save({length: value, date: getShortDate()}).then(function () {
+        var totalLength = 0;
+
+        var Laps = Parse.Object.extend("Laps");
+        var query = new Parse.Query(Laps);
+        query.equalTo("date", getShortDate());
+        query.find().then(function (results) {
+
+                for (var i = 0; i < results.length; i++) {
+                    var object = results[i];
+                    totalLength += parseInt(object.get('length'));
+                }
+                document.getElementById("today_so_far").innerHTML = "Time spent: " + secondsToString(totalLength);
+                toggleLoading(jqueryPressedElement);
+                if (callback) callback();
+                queryDaysDataForTable();
+            }
+        );
+    });
 }
 
 /*
@@ -264,7 +271,7 @@ function show() {
 function queryDaysDataForTable() {
 
     //$('this_week_table_tbody').text('');
-    toggleLoading('#this_week_table_tbody');
+    toggleLoading('#this_week_table');
     var days = [];
     var counter = 0;
     var doQuery = function (currDate) {
@@ -373,7 +380,7 @@ function callbackBuildWeekTable(days) {
 
         table.appendChild(row);
     }
-    toggleLoading('#this_week_table_tbody');
+    toggleLoading('#this_week_table');
 }
 
 /*
@@ -381,8 +388,13 @@ function callbackBuildWeekTable(days) {
  Daily Goal
  ================
  */
+
+function getGoalTime(value){
+    return secondsToString(value).substr(0,5);
+}
+
 function updateGoalTime(value) {
-    document.getElementById("goalTimeToSet").innerHTML = secondsToString(value).substr(0, 5);
+    document.getElementById("goalTimeToSet").innerHTML = getGoalTime(value);
 }
 function isDailyGoalSet(dayToCheck) {
     var date = dayToCheck || getShortDate();
@@ -405,7 +417,7 @@ function callbackIsDailyGoalSet(results) {
         $('#center_section').show();
     }
     else{
-        toggleUpdateDayGoalDiv();
+        $('#updateDayGoal').click();
     }
 }
 
@@ -449,7 +461,7 @@ function setDayGoal() {
                               .animate({'font-size':'1.5em'},2000)
                               .animate({'font-size':'1em',color:'black'},"fast");*/
                 $('#goalTime').text($('#goalTimeToSet').text());
-                toggleUpdateDayGoalDiv();
+                $('#updateDayGoal').click();
                 $('#center_section').show();
                 toggleLoading('#setDayGoal');
             }});
@@ -482,21 +494,30 @@ function testButton() {
     });
 }
 
+/*
+*  ----------------
+*  jQuery Functions
+*  ----------------
+* */
 
 $(document).ready(function(){
-   $("#updateDayGoal").click(toggleUpdateDayGoalDiv);
+   $("#updateDayGoal").click(function(){
+       $('#updateDayGoalDiv').slideToggle();
+       $(this).toggleClass("grayButton-sel").toggleClass('grayButton');
+   });
+
+    $('#addManualLap_Date').text(getShortDate());
+
     $('#addManualLapButton').click(function(){
        $('#addManualLapSection').slideToggle();
         $(this).toggleClass("button-sel").toggleClass('button');
     });
 
+    $('#addManualLap_Save').click(function(){
+        saveLap($('#slider').slider( "value" ),this,function(){$('#addManualLapButton').click()});
+    });
 
 });
-
-function toggleUpdateDayGoalDiv(){
-    $('#updateDayGoalDiv').slideToggle();
-    $('#updateDayGoal').toggleClass("grayButton-sel").toggleClass('grayButton');
-}
 
 function toggleLoading(jqueryElementName){
 
@@ -510,8 +531,18 @@ function toggleLoading(jqueryElementName){
             $(jqueryElementName).text('\xa0\xa0\xa0\xa0\xa0');
         }
             $(jqueryElementName).css('background-image','url(loading.gif)')
-            .css('background-repeat','no-repeat');
+            .css('background-repeat','no-repeat')
+                .css('background-position','center');
     }
 }
 
 
+$(function() {
+    $( "#slider" ).slider({
+    max:36000,
+    step:300,
+    change: function( event, ui ) {
+        $('#addManualLap_Length').text(getGoalTime(ui.value));
+    }
+    });
+});

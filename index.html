@@ -8,9 +8,7 @@
 
 <script src="stopwatch.js"></script>
 <script>
-    $(function() {
-        $( "#slider" ).slider();
-        });
+
 </script>
 <head>
     <title>Test</title>
@@ -59,10 +57,16 @@
             </div>
 
             <div class="section" id="addManualLapSection" style="display: none">
-                <span>Date: </span>
-                <span>Length: </span>
+                <div>Date:
+                <span id="addManualLap_Date"></span>
+                </div>
+                <div>
+                <span>Length:</span>
+                <span id="addManualLap_Length">00:00</span>
+                    &nbsp
                 <span style="width:30%;display: inline-block" id="slider"></span>
-                <span class="grayButton">Save</span>
+                </div>
+                <span class="grayButton" id="addManualLap_Save">Save</span>
             </div>
 
             <div id="today_so_far"></div>
