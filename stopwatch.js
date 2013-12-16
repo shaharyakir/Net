@@ -445,6 +445,9 @@ function setDayGoal() {
                 dayParseInstance.set("goal", howLong);
             }
             dayParseInstance.save({success: function () {
+                /*$('#goalTime').animate({color:'red'},"fast")
+                              .animate({'font-size':'1.5em'},2000)
+                              .animate({'font-size':'1em',color:'black'},"fast");*/
                 $('#goalTime').text($('#goalTimeToSet').text());
                 toggleUpdateDayGoalDiv();
                 $('#center_section').show();
@@ -481,12 +484,13 @@ function testButton() {
 
 
 $(document).ready(function(){
-
    $("#updateDayGoal").click(toggleUpdateDayGoalDiv);
     $('#addManualLapButton').click(function(){
        $('#addManualLapSection').slideToggle();
         $(this).toggleClass("button-sel").toggleClass('button');
     });
+
+
 });
 
 function toggleUpdateDayGoalDiv(){
@@ -509,3 +513,5 @@ function toggleLoading(jqueryElementName){
             .css('background-repeat','no-repeat');
     }
 }
+
+
