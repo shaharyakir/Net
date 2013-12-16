@@ -12,6 +12,7 @@
 <body onload="show()">
 <div id="outerBox">
     <div id="innerBox">
+
         <div id="title">
             <h1 style="margin-bottom: 0">Net Time</h1>
 
@@ -32,9 +33,17 @@
         </div>
 
         <div id="center_section" style="display: none">
+            <div style="text-align: center;width:20%;display: none" class="button"  onclick="testButton()">Test</div>
 
-            <div style="text-align: center" class="button" id="startButton" onclick="start()">Start</div>
+            <div id="buttonPanel">
+                <span class="button" id="startButton" onclick="start()">Start</span>
+                <span class="button" onclick="addManualLap()">Add Manually</span>
+            </div>
             <div class="timerDiv" id="time"></div>
+            <div class="section">
+                <input type="date">
+            </div>
+
             <div id="today_so_far"></div>
             <div id="why_stop">
                 <div style="text-align: left;padding: 0px;margin-bottom: 12px;font-size: 22px;font-weight: bold">Why did
@@ -61,6 +70,8 @@
                         <th>How Long</th>
                         <th>Goal</th>
                         <th>Percentage</th>
+                        <th>Work Began</th>
+                        <th>Work Ended</th>
                     </tr>
                     </thead>
                     <tbody id="this_week_table_tbody">

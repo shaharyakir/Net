@@ -1,6 +1,8 @@
 body {
     background: #f4f8fc;
     color: #57676e;
+    font-family: 'Lucida Sans Unicode','OpenSans', sans-serif;
+
 }
 
 h1 {
@@ -13,18 +15,7 @@ h2 {
     margin-top: 0px;
 }
 
-ul {
-    margin-left: 0px;
-    padding: 0;
-    margin-right: auto;
-}
 
-li {
-    margin-right: 8px;
-    width: 120px;
-    text-align: center;
-    display: inline-block;
-}
 
 #startButton {
     width: 100px;
@@ -45,32 +36,29 @@ li {
 
 }
 
-#today_so_far {
-    font-family: sans-serif;
-}
 
 .timerDiv {
     cursor: default;
     margin-top: 20px;
+    margin-bottom: 20px;
     margin-left: auto;
     margin-right: auto;
+    padding: 0 8px 0 8px ;
     background-color: #ea6c55;
     color: #FFFFFF;
     font-size: 50px;
     width: 220px;
     text-align: center;
-    font-family: 'OpenSans', sans-serif;
+
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0),0 0 10px rgba(0, 0, 0, 0.1);
     border: 1px solid #C3CCD0;
-
-
 }
 
 #innerBox{
     background: #fff;
     padding: 50px 100px;
     margin: 30px;
-    font-family: 'OpenSans', sans-serif;
+
     font-weight: 400;
     border: 1px solid #C3CCD0;
     font-size: 16px;
@@ -79,7 +67,7 @@ li {
 
 #otherTextBox {
     display: none;
-    font-family: Helvetica;
+
     font-size: 16px;
     background: dimgray;
     border: none;
@@ -91,10 +79,32 @@ li {
 }
 
 .section{
-    padding: 4px;
+    padding: 20px;
     margin: 8px;
     border-radius: 3px;
     border: 1px solid #d5e0e4;
     color: #333;
     background: #f8f8f8;
+}
+
+#this_week_table{
+    width: 66%;
+    border-collapse: collapse;
+}
+
+#this_week_table td{
+    text-align: center;
+    padding: 4px;
+    margin:0;
+}
+
+#this_week_table tbody tr:hover{
+
+    background: #E8E8E8;
+}
+
+#buttonPanel{
+    margin: 15px;
+    padding: 8px;
+    text-align: center;
 }
