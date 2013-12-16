@@ -27,13 +27,23 @@ h2 {
     background-color: #d7dd31;
 }
 
+
 .button {
     padding: 8px;
     margin: 4px;
     background-color: #e2ea36;
     font-size: 20px;
     cursor:pointer;
+    display: inline-block;
+}
 
+.button-sel {
+    padding: 8px;
+    margin: 4px;
+    background-color: #aeb42a;
+    font-size: 20px;
+    cursor:pointer;
+    display: inline-block;
 }
 
 
@@ -86,6 +96,32 @@ h2 {
     color: #333;
     background: #f8f8f8;
 }
+
+.grayButton{
+    margin-top: 8px;
+    padding:4px 8px 4px 8px;
+    display: inline-block;
+    cursor:pointer;
+
+    border: 1px solid #E7E7E7;
+}
+
+.grayButton:hover{
+    background-color: #F8F8F8;
+    border: 1px solid #C6C6C6;
+    color: #222222;
+}
+
+.grayButton-sel{
+    background-color: #E0E0E0;
+    border: 1px solid #D7D7D7;
+    color: #777777;
+    margin-top: 8px;
+    padding:4px 8px 4px 8px;
+    display: inline-block;
+    cursor:pointer;
+}
+
 
 #this_week_table{
     width: 66%;

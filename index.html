@@ -2,8 +2,8 @@
 <html lang="en-US">
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <script src="parse-1.2.13.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="stopwatch.js"></script>
-
 
 <head>
     <title>Test</title>
@@ -22,25 +22,35 @@
 
         <div id="goalSection" class="section">
             <span id="todayDate">Today: </span><br/>
-            <span id="goalTitle"></span>
-            <input style="font-size: 30px; font-family: Helvetica" id="goalInput" type="range"
-                   onchange="updateGoalTime(this.value)" value="3600" min="1800" max="36000" step="1800">
-            <span id="goalTime">01:00</span>
-            <span id="setDayGoal" onclick="setDayGoal()" class="button">Set</span>
-            <span id="updateDayGoal" onclick="toggleGoalElementsVisibility(true)" style="display: none" class="button">Update Daily Goal</span>
+            <span id="goalTitle">The Daily goal is:</span>
+            <span id="goalTime"></span>
             <br/>
-            <br/>
+            <span id="updateDayGoal" class="grayButton">Update Daily Goal
+
+            </span>
+
+            <div id="updateDayGoalDiv" style="display: none">
+                <br/>
+                <span>Set the daily goal:</span>
+                <input style="font-size: 30px; font-family: Helvetica" id="goalSlider" type="range"
+                       onclick="updateGoalTime(this.value)" value="3600" min="1800" max="36000" step="1800">
+                <span id="goalTimeToSet">01:00</span>
+                <span id="setDayGoal" onclick="setDayGoal()" class="button">Set</span>
+                <!-- toggleVisibility missing -->
+            </div>
+
         </div>
 
         <div id="center_section" style="display: none">
-            <div style="text-align: center;width:20%;display: none" class="button"  onclick="testButton()">Test</div>
+            <div style="text-align: center;width:20%;display: none" class="button" onclick="testButton()">Test</div>
 
             <div id="buttonPanel">
                 <span class="button" id="startButton" onclick="start()">Start</span>
-                <span class="button" onclick="addManualLap()">Add Manually</span>
+                <div class="timerDiv" id="time"></div>
+                <span class="button" id="addManualLapButton">Add Manually</span>
             </div>
-            <div class="timerDiv" id="time"></div>
-            <div class="section">
+
+            <div class="section" id="addManualLapSection" style="display: none">
                 <input type="date">
             </div>
 

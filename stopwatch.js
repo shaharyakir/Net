@@ -263,6 +263,8 @@ function show() {
  */
 function queryDaysDataForTable() {
 
+    //$('this_week_table_tbody').text('');
+    toggleLoading('#this_week_table_tbody');
     var days = [];
     var counter = 0;
     var doQuery = function (currDate) {
@@ -371,6 +373,7 @@ function callbackBuildWeekTable(days) {
 
         table.appendChild(row);
     }
+    toggleLoading('#this_week_table_tbody');
 }
 
 /*
@@ -379,7 +382,7 @@ function callbackBuildWeekTable(days) {
  ================
  */
 function updateGoalTime(value) {
-    document.getElementById("goalTime").innerHTML = secondsToString(value).substr(0, 5);
+    document.getElementById("goalTimeToSet").innerHTML = secondsToString(value).substr(0, 5);
 }
 function isDailyGoalSet(dayToCheck) {
     var date = dayToCheck || getShortDate();
@@ -388,28 +391,36 @@ function isDailyGoalSet(dayToCheck) {
     var query = new Parse.Query(DailyGoals);
 
     query.equalTo("date", date);
-
+    toggleLoading("#goalTime");
     query.find().then(callbackIsDailyGoalSet);
 }
 
 function callbackIsDailyGoalSet(results) {
+    toggleLoading('#goalTime');
     if (results[0]) {
-        toggleGoalElementsVisibility(false);
-        updateGoalTime(results[0].get("goal"));
+       // toggleGoalElementsVisibility(false);
+        //document.getElementById("goalTime").innerHTML = secondsToString(results[0].get("goal")).substr(0, 5);
+        $("#goalTime").text(secondsToString(results[0].get("goal")).substr(0, 5));
+        $("#goalTimeToSet").text(secondsToString(results[0].get("goal")).substr(0, 5));
+        $('#center_section').show();
+    }
+    else{
+        toggleUpdateDayGoalDiv();
     }
 }
 
 function toggleGoalElementsVisibility(show) {
-    document.getElementById('goalInput').style.display = show == true ? "" : "none";
+    /*document.getElementById('goalInput').style.display = show == true ? "" : "none";
     document.getElementById('setDayGoal').style.display = show == true ? "" : "none";
     document.getElementById('center_section').style.display = show == true ? "none" : "";
     document.getElementById('updateDayGoal').style.display = show == true ? "none" : "";
-    document.getElementById('goalTitle').innerHTML = show == true ? "Set your goal for today: " : "The daily goal is: ";
+    document.getElementById('goalTitle').innerHTML = show == true ? "Set your goal for today: " : "The daily goal is: ";*/
 }
 
 function setDayGoal() {
 
-    var howLong = document.getElementById('goalTime').innerHTML;
+    toggleLoading('#setDayGoal');
+    var howLong = document.getElementById('goalTimeToSet').innerHTML;
     howLong = timeStringToSeconds(howLong);
     var dayParseInstance;
 
@@ -434,7 +445,10 @@ function setDayGoal() {
                 dayParseInstance.set("goal", howLong);
             }
             dayParseInstance.save({success: function () {
-                toggleGoalElementsVisibility(false);
+                $('#goalTime').text($('#goalTimeToSet').text());
+                toggleUpdateDayGoalDiv();
+                $('#center_section').show();
+                toggleLoading('#setDayGoal');
             }});
 
         },
@@ -463,4 +477,35 @@ function testButton() {
     query.first().then(function (object) {
         console.log(object.createdAt);
     });
+}
+
+
+$(document).ready(function(){
+
+   $("#updateDayGoal").click(toggleUpdateDayGoalDiv);
+    $('#addManualLapButton').click(function(){
+       $('#addManualLapSection').slideToggle();
+        $(this).toggleClass("button-sel").toggleClass('button');
+    });
+});
+
+function toggleUpdateDayGoalDiv(){
+    $('#updateDayGoalDiv').slideToggle();
+    $('#updateDayGoal').toggleClass("grayButton-sel").toggleClass('grayButton');
+}
+
+function toggleLoading(jqueryElementName){
+
+    var URL_LOADING = 'url(loading.gif)';
+
+    if ($(jqueryElementName).css('background-image') != 'none'){
+        $(jqueryElementName).css('background','');
+    }
+    else{
+        if ($(jqueryElementName).text()===""){
+            $(jqueryElementName).text('\xa0\xa0\xa0\xa0\xa0');
+        }
+            $(jqueryElementName).css('background-image','url(loading.gif)')
+            .css('background-repeat','no-repeat');
+    }
 }
