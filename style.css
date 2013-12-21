@@ -139,8 +139,36 @@ h2 {
     background: #E8E8E8;
 }
 
-#buttonPanel{
+#timerPanel{
     margin: 15px;
     padding: 8px;
     text-align: center;
+}
+
+#goalSlider{
+    margin-left: 16px;
+    margin-right: 16px;
+}
+
+#timerProgressBar .ui-progressbar-value {
+    background-color: #ccc;
+
+}
+
+.ui-progressbar {
+    position: relative;
+}
+#progressLabel {
+    position: absolute;
+    left: 50%;
+    top: 4px;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 #fff;
+}
+
+#timerProgressBar{
+    width: 20%;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 16px;
 }

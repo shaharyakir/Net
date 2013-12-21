@@ -1,4 +1,6 @@
 var COOKIE_CURRENT_LAP = "currentLap";
+var currentGoalLength=0;
+var currentDailyProgress=0;
 
 // TODO: wrap in a cookie Handler object - when I learn OO!
 /*
@@ -98,8 +100,20 @@ function reset() {
 }
 function update() {
     time.innerHTML = formatTime(x.time());
+    updateProgressBar();
     createCookie(COOKIE_CURRENT_LAP, x.time());
 }
+
+function updateProgressBar(){
+
+    var percentage = (((timeStringToSeconds($(".timerDiv").text())+currentDailyProgress) / currentGoalLength) * 100);
+    percentage = Math.ceil(percentage * 10) / 10;
+    percentage = (!isNaN(percentage) && percentage != Infinity) ? percentage : 0;
+
+    $( "#timerProgressBar").progressbar("option","value",percentage);
+    $( "#progressLabel").text( $( "#timerProgressBar").progressbar( "option","value" ) + "%" );
+}
+
 function start() {
 
     var button = document.getElementById("startButton");
@@ -115,7 +129,6 @@ function start() {
         saveLap(timeStringToSeconds($('#time').text()), '#startButton');
 
         stop();
-        //  document.getElementById("why_stop").style.display = "block";
     }
 
     var newVal = button.innerHTML == "Start" ? "Stop" : "Start";
@@ -250,6 +263,8 @@ function show() {
 
     initParse();
 
+    initDailyProgress();
+
     time = document.getElementById('time');
     document.getElementById('todayDate').innerHTML += getShortDate();
 
@@ -263,6 +278,23 @@ function show() {
 
     isDailyGoalSet();
     queryDaysDataForTable();
+}
+
+function initDailyProgress(){
+
+    var Laps = Parse.Object.extend("Laps");
+    var query = new Parse.Query(Laps);
+    query.equalTo("date", getShortDate());
+    query.find().then(function (results) {
+        var totalLength = 0;
+        for (var i = 0; i < results.length; i++) {
+            var object = results[i];
+            totalLength += parseInt(object.get('length'));
+        }
+
+        currentDailyProgress = parseInt(totalLength);
+        updateProgressBar();
+    });
 }
 
 /*
@@ -316,7 +348,6 @@ function queryDaysDataForTable() {
             })
             .then(function (object) {
                 day.firstLap = object ? dateObjectToHHMM(object.createdAt,(object.get("length"))) : "00:00";
-                console.log("date: " + day.date + ";firstlap: " + day.firstLap);
             })
             .then(function () {
                 var Laps = Parse.Object.extend("Laps");
@@ -327,7 +358,6 @@ function queryDaysDataForTable() {
             })
             .then(function (object) {
                 day.lastLap = object ? dateObjectToHHMM(object.createdAt) : "00:00";
-                console.log("date: " + day.date + ";lastlap: " + day.lastLap);
             }
         )
             .always(function () {
@@ -397,9 +427,6 @@ function getGoalTime(value) {
     return secondsToString(value).substr(0, 5);
 }
 
-function updateGoalTime(value) {
-    document.getElementById("goalTimeToSet").innerHTML = getGoalTime(value);
-}
 function isDailyGoalSet(dayToCheck) {
     var date = dayToCheck || getShortDate();
 
@@ -416,6 +443,8 @@ function callbackIsDailyGoalSet(results) {
     if (results[0]) {
         // toggleGoalElementsVisibility(false);
         //document.getElementById("goalTime").innerHTML = secondsToString(results[0].get("goal")).substr(0, 5);
+        currentGoalLength = parseInt(results[0].get("goal"));
+        updateProgressBar(); //TODO:SYNC the daily goal and daily progress methods to update the progress bar
         $("#goalTime").text(secondsToString(results[0].get("goal")).substr(0, 5));
         $("#goalTimeToSet").text(secondsToString(results[0].get("goal")).substr(0, 5));
         $('#center_section').show();
@@ -467,6 +496,7 @@ function setDayGoal() {
                 $('#goalTime').text($('#goalTimeToSet').text());
                 $('#updateDayGoal').click();
                 $('#center_section').show();
+                currentGoalLength=howLong;
                 toggleLoading('#setDayGoal');
                 queryDaysDataForTable();
             }});
@@ -519,7 +549,7 @@ $(document).ready(function () {
     });
 
     $('#addManualLap_Save').click(function () {
-        saveLap($('#slider').slider("value"), this, function () {
+        saveLap($('#manualLapSlider').slider("value"), this, function () {
             $('#addManualLapButton').click()
         });
     });
@@ -543,13 +573,36 @@ function toggleLoading(jqueryElementName) {
     }
 }
 
-
+// jQueryUI
 $(function () {
-    $("#slider").slider({
+    $("#manualLapSlider").slider({
         max: 36000,
         step: 300,
         change: function (event, ui) {
             $('#addManualLap_Length').text(getGoalTime(ui.value));
         }
     });
+
+    $("#goalSlider").slider({
+        max: 36000,
+        step: 1800,
+        change: function (event, ui) {
+            $('#goalTimeToSet').text(getGoalTime(ui.value));
+        }
+    });
+
+    var progressbar = $( "#progressbar" ),
+        progressLabel = $( "#progressLabel" );
+
+    $("#timerProgressBar").progressbar({
+
+        /*change: function() {
+            progressLabel.text( progressbar.progressbar( "value" ) + "%" );
+        },*/
+        complete: function() {
+            progressLabel.text( "Complete!" );
+        }
+    });
+
 });
+

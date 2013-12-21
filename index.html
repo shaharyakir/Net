@@ -5,6 +5,8 @@
 <script src="jquery-ui-1.10.3.custom/js/jquery-1.9.1.js"></script>
 <script src="jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.js"></script>
 <link href="jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.css" rel="stylesheet">
+<link rel="stylesheet" href="jquery-ui-1.10.3.custom/development-bundle/demos/demos.css">
+
 
 <script src="stopwatch.js"></script>
 <script>
@@ -38,8 +40,7 @@
             <div id="updateDayGoalDiv" style="display: none">
                 <br/>
                 <span>Set the daily goal:</span>
-                <input style="font-size: 30px; font-family: Helvetica" id="goalSlider" type="range"
-                       onclick="updateGoalTime(this.value)" value="3600" min="1800" max="36000" step="1800">
+                <span style="width:30%;display: inline-block" id="goalSlider"></span>
                 <span id="goalTimeToSet">01:00</span>
                 <span id="setDayGoal" onclick="setDayGoal()" class="button">Set</span>
                 <!-- toggleVisibility missing -->
@@ -50,9 +51,10 @@
         <div id="center_section" style="display: none">
             <div style="text-align: center;width:20%;display: none" class="button" onclick="testButton()">Test</div>
 
-            <div id="buttonPanel">
+            <div id="timerPanel">
                 <span class="button" id="startButton" onclick="start()">Start</span>
                 <div class="timerDiv" id="time"></div>
+                <div id="timerProgressBar"><div id="progressLabel">Loading...</div></div>
                 <span class="button" id="addManualLapButton">Add Manually</span>
             </div>
 
@@ -64,7 +66,7 @@
                 <span>Length:</span>
                 <span id="addManualLap_Length">00:00</span>
                     &nbsp
-                <span style="width:30%;display: inline-block" id="slider"></span>
+                <span style="width:30%;display: inline-block" id="manualLapSlider"></span>
                 </div>
                 <span class="grayButton" id="addManualLap_Save">Save</span>
             </div>
