@@ -112,7 +112,7 @@ function start() {
     else {
         var howLong = document.getElementById("time").innerHTML;
 
-        saveLap(timeStringToSeconds($('#time').text()),'#startButton');
+        saveLap(timeStringToSeconds($('#time').text()), '#startButton');
 
         stop();
         //  document.getElementById("why_stop").style.display = "block";
@@ -122,7 +122,7 @@ function start() {
     button.innerHTML = newVal;
 }
 
-function saveLap(value,jqueryPressedElement,callback){
+function saveLap(value, jqueryPressedElement, callback) {
     toggleLoading(jqueryPressedElement);
     var TestObject = Parse.Object.extend("Laps");
     var testObject = new TestObject();
@@ -219,8 +219,10 @@ function secondsToString(time) {
     newTime = pad(h, 2) + ':' + pad(m, 2) + ':' + pad(s, 2);
     return newTime;
 }
-
-function dateObjectToHHMM(date){
+// date - a Date object
+// offset - an amount in seconds to subtract or add to the time
+function dateObjectToHHMM(date,offset){
+    date = offset ? (new Date(date - offset*1000)) : date;
     var hours = date.getHours()<10 ?  '0'+date.getHours() : date.getHours();
     var minutes = date.getMinutes()<10 ? '0'+date.getMinutes() : date.getMinutes();
     return hours+":"+minutes;
@@ -313,7 +315,8 @@ function queryDaysDataForTable() {
                 return query.first();
             })
             .then(function (object) {
-               day.firstLap = object ? dateObjectToHHMM(object.createdAt)  : "00:00";
+                day.firstLap = object ? dateObjectToHHMM(object.createdAt,(object.get("length"))) : "00:00";
+                console.log("date: " + day.date + ";firstlap: " + day.firstLap);
             })
             .then(function () {
                 var Laps = Parse.Object.extend("Laps");
@@ -323,7 +326,8 @@ function queryDaysDataForTable() {
                 return query.first();
             })
             .then(function (object) {
-                day.lastLap = object ? dateObjectToHHMM(object.createdAt)  : "00:00";
+                day.lastLap = object ? dateObjectToHHMM(object.createdAt) : "00:00";
+                console.log("date: " + day.date + ";lastlap: " + day.lastLap);
             }
         )
             .always(function () {
@@ -349,7 +353,7 @@ function queryDaysDataForTable() {
 function callbackBuildWeekTable(days) {
     var table = document.getElementById("this_week_table_tbody");
     table.innerHTML = "";
-    var i, row, date, length, dayCell, lengthCell, goalCell, percentageCell,firstLapCell,lastLapCell;
+    var i, row, date, length, dayCell, lengthCell, goalCell, percentageCell, firstLapCell, lastLapCell;
 
     for (i = 0; i < days.length; i++) {
 
@@ -389,8 +393,8 @@ function callbackBuildWeekTable(days) {
  ================
  */
 
-function getGoalTime(value){
-    return secondsToString(value).substr(0,5);
+function getGoalTime(value) {
+    return secondsToString(value).substr(0, 5);
 }
 
 function updateGoalTime(value) {
@@ -410,23 +414,23 @@ function isDailyGoalSet(dayToCheck) {
 function callbackIsDailyGoalSet(results) {
     toggleLoading('#goalTime');
     if (results[0]) {
-       // toggleGoalElementsVisibility(false);
+        // toggleGoalElementsVisibility(false);
         //document.getElementById("goalTime").innerHTML = secondsToString(results[0].get("goal")).substr(0, 5);
         $("#goalTime").text(secondsToString(results[0].get("goal")).substr(0, 5));
         $("#goalTimeToSet").text(secondsToString(results[0].get("goal")).substr(0, 5));
         $('#center_section').show();
     }
-    else{
+    else {
         $('#updateDayGoal').click();
     }
 }
 
 function toggleGoalElementsVisibility(show) {
     /*document.getElementById('goalInput').style.display = show == true ? "" : "none";
-    document.getElementById('setDayGoal').style.display = show == true ? "" : "none";
-    document.getElementById('center_section').style.display = show == true ? "none" : "";
-    document.getElementById('updateDayGoal').style.display = show == true ? "none" : "";
-    document.getElementById('goalTitle').innerHTML = show == true ? "Set your goal for today: " : "The daily goal is: ";*/
+     document.getElementById('setDayGoal').style.display = show == true ? "" : "none";
+     document.getElementById('center_section').style.display = show == true ? "none" : "";
+     document.getElementById('updateDayGoal').style.display = show == true ? "none" : "";
+     document.getElementById('goalTitle').innerHTML = show == true ? "Set your goal for today: " : "The daily goal is: ";*/
 }
 
 function setDayGoal() {
@@ -458,12 +462,13 @@ function setDayGoal() {
             }
             dayParseInstance.save({success: function () {
                 /*$('#goalTime').animate({color:'red'},"fast")
-                              .animate({'font-size':'1.5em'},2000)
-                              .animate({'font-size':'1em',color:'black'},"fast");*/
+                 .animate({'font-size':'1.5em'},2000)
+                 .animate({'font-size':'1em',color:'black'},"fast");*/
                 $('#goalTime').text($('#goalTimeToSet').text());
                 $('#updateDayGoal').click();
                 $('#center_section').show();
                 toggleLoading('#setDayGoal');
+                queryDaysDataForTable();
             }});
 
         },
@@ -495,54 +500,56 @@ function testButton() {
 }
 
 /*
-*  ----------------
-*  jQuery Functions
-*  ----------------
-* */
+ *  ----------------
+ *  jQuery Functions
+ *  ----------------
+ * */
 
-$(document).ready(function(){
-   $("#updateDayGoal").click(function(){
-       $('#updateDayGoalDiv').slideToggle();
-       $(this).toggleClass("grayButton-sel").toggleClass('grayButton');
-   });
+$(document).ready(function () {
+    $("#updateDayGoal").click(function () {
+        $('#updateDayGoalDiv').slideToggle();
+        $(this).toggleClass("grayButton-sel").toggleClass('grayButton');
+    });
 
     $('#addManualLap_Date').text(getShortDate());
 
-    $('#addManualLapButton').click(function(){
-       $('#addManualLapSection').slideToggle();
+    $('#addManualLapButton').click(function () {
+        $('#addManualLapSection').slideToggle();
         $(this).toggleClass("button-sel").toggleClass('button');
     });
 
-    $('#addManualLap_Save').click(function(){
-        saveLap($('#slider').slider( "value" ),this,function(){$('#addManualLapButton').click()});
+    $('#addManualLap_Save').click(function () {
+        saveLap($('#slider').slider("value"), this, function () {
+            $('#addManualLapButton').click()
+        });
     });
 
 });
 
-function toggleLoading(jqueryElementName){
+function toggleLoading(jqueryElementName) {
 
     var URL_LOADING = 'url(loading.gif)';
 
-    if ($(jqueryElementName).css('background-image') != 'none'){
-        $(jqueryElementName).css('background','');
+    if ($(jqueryElementName).css('background-image') != 'none') {
+        $(jqueryElementName).css('background', '');
     }
-    else{
-        if ($(jqueryElementName).text()===""){
+    else {
+        if ($(jqueryElementName).text() === "") {
             $(jqueryElementName).text('\xa0\xa0\xa0\xa0\xa0');
         }
-            $(jqueryElementName).css('background-image','url(loading.gif)')
-            .css('background-repeat','no-repeat')
-                .css('background-position','center');
+        $(jqueryElementName).css('background-image', 'url(loading.gif)')
+            .css('background-repeat', 'no-repeat')
+            .css('background-position', 'center');
     }
 }
 
 
-$(function() {
-    $( "#slider" ).slider({
-    max:36000,
-    step:300,
-    change: function( event, ui ) {
-        $('#addManualLap_Length').text(getGoalTime(ui.value));
-    }
+$(function () {
+    $("#slider").slider({
+        max: 36000,
+        step: 300,
+        change: function (event, ui) {
+            $('#addManualLap_Length').text(getGoalTime(ui.value));
+        }
     });
 });
