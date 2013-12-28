@@ -54,7 +54,7 @@
             <div id="timerPanel">
                 <span class="button" id="startButton" onclick="start()">Start</span>
                 <div class="timerDiv" id="time"></div>
-                <div id="timerProgressBar"><div id="progressLabel">Loading...</div></div>
+                <div id="timerProgressBar"><div id="progressLabel"></div></div>
                 <span class="button" id="addManualLapButton">Add Manually</span>
             </div>
 
@@ -88,7 +88,7 @@
                 <textarea id="otherTextBox" rows="5" cols="50">
                 </textarea>
             </div>
-            <div class="section" id="this_week" onclick="queryDaysDataForTable()">
+            <div class="section" id="this_week" onclick="buildWeekTable()">
 
                 <table id="this_week_table">
                     <thead>
