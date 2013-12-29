@@ -9,9 +9,6 @@
 
 
 <script src="stopwatch.js"></script>
-<script>
-
-</script>
 <head>
     <title>Test</title>
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -53,20 +50,23 @@
 
             <div id="timerPanel">
                 <span class="button" id="startButton" onclick="start()">Start</span>
+
                 <div class="timerDiv" id="time"></div>
-                <div id="timerProgressBar"><div id="progressLabel"></div></div>
+                <div id="timerProgressBar">
+                    <div id="progressLabel"></div>
+                </div>
                 <span class="button" id="addManualLapButton">Add Manually</span>
             </div>
 
             <div class="section" id="addManualLapSection" style="display: none">
                 <div>Date:
-                <span id="addManualLap_Date"></span>
+                    <span id="addManualLap_Date"></span>
                 </div>
                 <div>
-                <span>Length:</span>
-                <span id="addManualLap_Length">00:00</span>
+                    <span>Length:</span>
+                    <span id="addManualLap_Length">00:00</span>
                     &nbsp
-                <span style="width:30%;display: inline-block" id="manualLapSlider"></span>
+                    <span style="width:30%;display: inline-block" id="manualLapSlider"></span>
                 </div>
                 <span class="grayButton" id="addManualLap_Save">Save</span>
             </div>
@@ -88,7 +88,72 @@
                 <textarea id="otherTextBox" rows="5" cols="50">
                 </textarea>
             </div>
+
+            <ul class="section" id="dashboard">
+                <li class="dashboard_box" id="dashboard_today">
+                    <div class="dashboard_title">Today</div>
+                    <div class="dashboard_content">
+
+                        <ul>
+                            <li>
+                                <span class="dashboard_time_large" id="dashboard_today_hours">30</span>
+                                <span class="dashboard_caption_large">hours</span>
+                            </li>
+                            <li>
+                                <span class="dashboard_time_small" id="dashboard_today_minutes">5</span>
+                                </br>
+                                <span class="dashboard_caption_small">minutes</span>
+                            </li>
+
+                        </ul>
+
+                    </div>
+                </li>
+
+
+                <li class="dashboard_box" id="dashboard_week">
+                    <div class="dashboard_title">This Week</div>
+                    <div class="dashboard_content">
+
+                        <ul>
+                            <li>
+                                <span class="dashboard_time_large">45</span>
+                                <span class="dashboard_caption_large">hours</span>
+                            </li>
+                            <li>
+                                <span class="dashboard_time_small">58</span>
+                                </br>
+                                <span class="dashboard_caption_small">minutes</span>
+                            </li>
+
+                        </ul>
+
+                    </div>
+                </li>
+                <li class="dashboard_box" id="dashboard_month">
+                    <div class="dashboard_title">This Month</div>
+                    <div class="dashboard_content">
+
+                        <ul>
+                            <li>
+                                <span class="dashboard_time_large">135</span>
+                                <span class="dashboard_caption_large">hours</span>
+                            </li>
+                            <li>
+                                <span class="dashboard_time_small">24</span>
+                                </br>
+                                <span class="dashboard_caption_small">minutes</span>
+                            </li>
+
+                        </ul>
+
+                    </div>
+                </li>
+
+            </ul>
+
             <div class="section" id="this_week" onclick="buildWeekTable()">
+
 
                 <table id="this_week_table">
                     <thead>

@@ -167,6 +167,7 @@ function saveLap(value, jqueryPressedElement, callback) {
 function updateAllObjects(){
     buildWeekTable();
     updateProgressBar();
+    updateDashboard();
 }
 
 /*
@@ -526,7 +527,6 @@ function displayOtherTextBox() {
 }
 
 function testButton() {
-    console.log("dd");
     var Laps = Parse.Object.extend("Laps");
     var query = new Parse.Query(Laps);
     query.equalTo("date", "12/16/2013");
@@ -536,6 +536,42 @@ function testButton() {
     });
 }
 
+function getTotalLapLengthByDate(startDate,endDate){
+
+    if (endDate===undefined) {endDate=startDate};
+
+
+    var Laps = Parse.Object.extend("Laps");
+    var query = new Parse.Query(Laps);
+    query.equalTo("date", startDate);
+    query.find().then(function (results) {
+        var totalLength = 0;
+        for (var i = 0; i < results.length; i++) {
+            var object = results[i];
+            totalLength += parseInt(object.get('length'));
+        }
+
+        updateDashboardCallback(totalLength);
+    });
+
+}
+
+/*
+ *  ----------------
+ *  Dashboard
+ *  ----------------
+ * */
+
+function updateDashboard(){
+    getTotalLapLengthByDate(getShortDate());
+}
+
+function updateDashboardCallback(length){
+
+    $("#dashboard_today_hours").text(secondsToString(length).split(":")[0]);
+    $("#dashboard_today_minutes").text(secondsToString(length).split(":")[1]);
+}
+
 /*
  *  ----------------
  *  jQuery Functions
@@ -543,6 +579,9 @@ function testButton() {
  * */
 
 $(document).ready(function () {
+
+
+
     $("#updateDayGoal").click(function () {
         $('#updateDayGoalDiv').slideToggle();
         $(this).toggleClass("grayButton-sel").toggleClass('grayButton');

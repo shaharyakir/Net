@@ -172,3 +172,72 @@ h2 {
     margin-right: auto;
     margin-bottom: 16px;
 }
+
+/* Dashboard */
+#dashboard{
+    font-size: 20px;
+    font-weight: bold;
+    list-style-type: none;
+
+}
+
+.dashboard_box{
+    display: inline-block;
+    margin-left: 10px;
+    border:1px solid #ffcaca;
+    width: 25%;
+}
+
+.dashboard_title{
+    background: darkslategray;
+    font-size: 14px;
+    color:white;
+    text-align: center;
+    padding: 4px;
+}
+
+.dashboard_content{
+    background: none repeat scroll 0 0 #FFFFFF;
+
+    font-weight: bold;
+    text-align: center;
+    padding-top:10px;
+    padding-bottom:10px;
+}
+
+.dashboard_content li{
+    display: inline-block;
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+.dashboard_content ul{
+    padding: 0px;
+}
+
+
+.dashboard_time_large{
+    font-size: 55px;
+    color:red;
+}
+
+.dashboard_caption_large{
+    color:darkgray;
+    font-size: 16px;
+    margin-top:-12px;
+    display: block;
+    line-height: 10px;
+
+}
+
+.dashboard_time_small{
+    font-size: 40px;
+}
+
+.dashboard_caption_small{
+    color:darkgray;
+    font-size: 14px;
+
+    display: block;
+    line-height: 10px;
+}
