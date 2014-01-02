@@ -145,14 +145,14 @@ function start() {
     button.innerHTML = newVal;
 }
 
-function saveLap(value, jqueryPressedElement, callback) {
+function saveLap(value, jqueryPressedElement, callback, isManual) {
 
     if (value > 0) {
         toggleLoading(jqueryPressedElement);
         var TestObject = Parse.Object.extend("Laps");
         var testObject = new TestObject();
-
-        testObject.save({length: value, date: getShortDate()}).then(function () {
+        isManual = isManual ? isManual : false;
+        testObject.save({length: value, date: getShortDate(), isManualLap: isManual}).then(function () {
             toggleLoading(jqueryPressedElement);
             updateAllObjects();
             if (callback) {
@@ -172,6 +172,7 @@ function updateAllObjects() {
             $("#center_section").slideDown();
         }
     })
+    chart();
 }
 
 /*
@@ -701,9 +702,9 @@ function updateDashboard() {
             $("#dashboard_today_hours").text(secondsToString(value).split(":")[0]);
             $("#dashboard_today_minutes").text(secondsToString(value).split(":")[1]);
             var dailyGoal = timeStringToSeconds($("#goalTime_day").text());
-            var dailyGoalLeft = dailyGoal-value;
+            var dailyGoalLeft = dailyGoal - value;
             $("#daily_goal_percentage").text(dividedValueToPercentage(value / dailyGoal));
-            $("#goalTime_day_left").text(secondsToString(dailyGoalLeft).substr(0,5));
+            $("#goalTime_day_left").text(secondsToString(dailyGoalLeft).substr(0, 5));
             var bestPossibleTime = new Date()
             bestPossibleTime.setTime((dailyGoalLeft * MILLISECONDS) + bestPossibleTime.getTime());
             bestPossibleTime = dateObjectToHHMM(bestPossibleTime);
@@ -767,7 +768,7 @@ $(document).ready(function () {
         currentDailyProgress += manualLapLength;
         saveLap(manualLapLength, this, function () {
             $('#addManualLapButton').click()
-        });
+        }, true);
     });
 
     $('.expandCollapseTitle').click(function () {
@@ -861,71 +862,169 @@ $(function () {
 
  */
 
+function getLaps(date) {
+    var promise = $.Deferred();
+    var Laps = Parse.Object.extend("Laps");
+    var query = new Parse.Query(Laps);
+    query.equalTo("date", date);
+    query.notEqualTo("isManualLap", true);
+    query.ascending("createdAt");
+    query.find().then(function (results) {
+        promise.resolve(results);
+    });
+    return promise.promise();
+}
+
+function findFirstLap(date) {
+    var promise = $.Deferred();
+    var Laps = Parse.Object.extend("Laps");
+    var query = new Parse.Query(Laps);
+    query.equalTo("date", date);
+    query.notEqualTo("isManualLap", true);
+    query.ascending("createdAt");
+    query.first().then(function (result) {
+        var val = result ? (result.createdAt - (result.get("length") * MILLISECONDS)) : undefined;
+        promise.resolve(val);
+    });
+
+    return promise.promise();
+}
+
+function getManualLapTotalLength(date) {
+    var promise = $.Deferred();
+    var Laps = Parse.Object.extend("Laps");
+    var query = new Parse.Query(Laps);
+    var val = 0;
+    query.equalTo("date", date);
+    query.equalTo("isManualLap", true);
+    query.find().then(function (results) {
+        if (results) {
+            for (var i = 0; i < results.length; i++) {
+                val += results[i].get("length");
+            }
+        }
+        promise.resolve(val / 3600);
+    });
+
+    return promise.promise();
+}
+
 function chart() {
 
     var dps = [];
-    var dpsBreaks = [];
-    var Laps = Parse.Object.extend("Laps");
-    var query = new Parse.Query(Laps);
-    query.equalTo("date", getShortDate());
-    query.ascending("createdAt");
-    query.find().then(function (results) {
-
-        for (var i = 0; i < results.length; i++) {
-            var object = results[i];
+    var manualDps = [];
+    var goalDps = [];
+    var firstLap;
+    var manualLapCount = 0;
+    var length = 0;
 
 
-            var lapEnd = object.createdAt;
-            var lapStart = new Date(lapEnd - (object.get("length") * 1000));
+    toggleLoading("#chart");
 
-            if ((lapStart - prevLapEnd) > (1000 * 300)) {
-                if (dpsBreaks.length > 0) {
-                    dpsBreaks.push({x: prevLapEnd, y: 0});
-                }
-                ;
-                dpsBreaks.push({x: prevLapEnd, y: 1});
-                dpsBreaks.push({x: lapStart, y: 1});
-                dpsBreaks.push({x: lapStart, y: 0});
+
+    // TODO: handle a case when there's no first lap!!!
+    findFirstLap(getShortDate())  // Get the first lap (use it as the manual lap start time)
+        .then(function (result) {
+            if (result) {
+                firstLap = result
             }
-            dps.push({x: lapStart, y: 1});
-            dps.push({x: lapEnd, y: 1});
-            var prevLapEnd = lapEnd;
-        }
+            ;
+        })
+        .then(function () {
+            return getManualLapTotalLength(getShortDate());  // Get today's total manual lap time
+        })
+        .then(function (result) {
+            manualLapCount = result;
+            if (manualLapCount > 0) {
+                length = manualLapCount;
+                manualDps.push({x: firstLap, y: 0, markerColor: "yellow"});
+                manualDps.push({x: firstLap, y: manualLapCount, markerColor: "yellow", indexLabel: "M"});
+            }
+        })
+        .then(function () {
+            return getLaps(getShortDate());
+        })
+        .then(function (results) {
+            for (var i = 0; i < results.length; i++) {
+                var object = results[i];
+                var lapEnd = object.createdAt;
+                var lapStart = new Date(lapEnd - (object.get("length") * 1000));
 
+                var dp = {x: lapStart, y: length, markerType: "none"};
 
-        var chart = new CanvasJS.Chart("chartContainer",
-            {
-                backgroundColor: "#f8f8f8",
+                // todo: consolidate points
 
-                title: {
-                },
-                axisX: {
-                    valueFormatString: "HH:mm",
-                },
-                axisY: {
-                    includeZero: false,
-                    gridColor: "#f8f8f8",
-                    valueFormatString: " "
+                dps.push(dp);
+                length += ((lapEnd - lapStart) / 1000 / 3600);
+                length = Math.ceil(length * 1000) / 1000;
+                dps.push({x: lapEnd, y: length, markerType: "none"});
 
-                },
-                data: [
-                    {
-                        type: "line",
+                if ((lapStart - prevLapEnd) > (1000 * 300)) {
+                    dps[dps.length - 3].indexLabel = "SB";
+                    dps[dps.length - 3].markerColor = "red";
+                    dps[dps.length - 3].markerType = "circle";
+                    dps[dps.length - 2].indexLabel = "EB";
+                    dps[dps.length - 2].markerColor = "red";
+                    dps[dps.length - 2].markerType = "circle";
+                }
+                var prevLapEnd = lapEnd;
+            }
 
-                        dataPoints: dps
-                    },
-                    {
-                        type: "line",
-                        lineWidth: 5,
-                        dataPoints: dpsBreaks
-                    }
-                ]
+            dps.sort(function (a, b) {
+                a = new Date(a.x);
+                b = new Date(b.x);
+                return a > b ? -1 : a < b ? 1 : 0;
             });
+        }).then(isDailyGoalSet)
+
+        .then(function (value) {
+            var goal = value.get("goal") / 3600;
+            goalDps.push({x: dps[0].x, y: goal});
+            goalDps.push({x: dps[dps.length - 1].x, y: goal});
+        })
+        .then(function () {
+
+            var chartx = new CanvasJS.Chart("chartContainer",
+                {
+                    backgroundColor: "#f8f8f8",
+                    zoomEnabled: true,
+
+                    title: {
+                    },
+                    axisX: {
+                        valueFormatString: "HH:mm",
+                    },
+                    axisY: {
+                        includeZero: false,
+                        gridColor: "#f8f8f8",
+                        //valueFormatString: " "
+
+                    },
+                    data: [
+                        {
+                            type: "line",
+
+                            dataPoints: dps
+                        },
+                        {
+                            type: "line",
+                            color: "yellow",
+                            dataPoints: manualDps
+                        },
+                        {
+                            type: "line",
+                            color: "green",
+                            dataPoints: goalDps
+                        }
+                    ]
+                });
 
 
-        chart.render();
+            chartx.render();
 
-    });
+            toggleLoading("#chart");
 
-
+        }
+    );
 }
+
