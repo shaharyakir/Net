@@ -205,6 +205,11 @@ margin: 0;
 	font-size:12px;
 }
 
+.goalSlider{
+    width:20%;
+    display:inline-block;
+}
+
 #timerProgressBar{
     width: 20%;
     margin-left: auto;
@@ -304,3 +309,6 @@ margin: 0;
 	color:red;
 }
 
+.goalTime:hover{
+    color:darkred;
+}
