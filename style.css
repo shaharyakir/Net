@@ -1,3 +1,4 @@
+
 body {
     background: #f4f8fc;
     color: #57676e;
@@ -230,7 +231,7 @@ margin: 0;
     display: inline-block;
     margin-left: 10px;
     border:1px solid #ffcaca;
-    width: 30%;
+    width: 20%;
 }
 
 .dashboard_title{
@@ -286,6 +287,12 @@ margin: 0;
     display: block;
     line-height: 10px;
 }
+
+#dashboard_today{
+    width:40%;
+}
+
+/* */
 
 .goal{
 	padding-top:8px;
