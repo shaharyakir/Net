@@ -24,38 +24,111 @@
             <h2>Project: Javascript Development</h2>
 
         </div>
+		
+				 <div id="dashboard" class="section">
+				 
+				 <ul>
+				 
+                <li class="dashboard_box" id="dashboard_today">
+                    <div class="dashboard_title">Today</div>
+                    <div class="dashboard_content">
 
-        <div id="goalSection" class="section">
-            <span id="todayDate">Today: </span><br/>
-            <span id="goalTitle">The Daily goal is:</span>
-            <span id="goalTime"></span>
-            <br/>
-            <span id="updateDayGoal" class="grayButton">Update Daily Goal
+                        <ul>
+							<li class="goalPercentage">
+							Completed
+							<span class="goalTime" id="daily_goal_percentage"></span>
+							</li>
+							
+                            <li>
+                                <span class="dashboard_time_large" id="dashboard_today_hours">00</span>
+                                <span class="dashboard_caption_large">hours</span>
+                            </li>
+                            <li>
+                                <span class="dashboard_time_small" id="dashboard_today_minutes">00</span>
+                                </br>
+                                <span class="dashboard_caption_small">minutes</span>
+                            </li>
+							<li class="goal">
+							Goal
+							<span class="goalTime" id="goalTime"></span>
+							
+							</li>
+                        </ul>
 
-            </span>
+                    </div>
+                </li>
 
-            <div id="updateDayGoalDiv" style="display: none">
-                <br/>
-                <span>Set the daily goal:</span>
-                <span style="width:30%;display: inline-block" id="goalSlider"></span>
-                <span id="goalTimeToSet">01:00</span>
-                <span id="setDayGoal" onclick="setDayGoal()" class="button">Set</span>
-                <!-- toggleVisibility missing -->
-            </div>
 
-        </div>
+                <li class="dashboard_box" id="dashboard_week">
+                    <div class="dashboard_title">This Week</div>
+                    <div class="dashboard_content">
 
+                        <ul>
+						<li class="goalPercentage">
+							Completed
+							<span class="goalTime" id="weekly_goal_percentage"></span>
+							</li>
+                            <li>
+                                <span class="dashboard_time_large" id="dashboard_week_hours">00</span>
+                                <span class="dashboard_caption_large">hours</span>
+                            </li>
+                            <li>
+                                <span class="dashboard_time_small " id="dashboard_week_minutes">00</span>
+                                </br>
+                                <span class="dashboard_caption_small">minutes</span>
+                            </li>
+							<li class="goal" id="weekly_goal">
+							Goal
+							<span class="goalTime" id="goalTime_week">00:00</span>
+							<span id="setWeeklyGoalSection" style="display:none">
+								<span style="width:20%;display:inline-block" id="weeklyGoalSlider" class="slider"></span>
+								<span id="setWeeklyGoal" onclick="setWeeklyGoal()" class="smallGrayButton">Set</span>
+							</span>
+							</li>
+                        </ul>
+			
+                
+                
+                
+            
+
+                    </div>
+                </li>
+                <li class="dashboard_box" id="dashboard_month">
+                    <div class="dashboard_title">This Month</div>
+                    <div class="dashboard_content">
+
+                        <ul>
+                            <li>
+                                <span class="dashboard_time_large" id="dashboard_month_hours">00</span>
+                                <span class="dashboard_caption_large">hours</span>
+                            </li>
+                            <li>
+                                <span class="dashboard_time_small" id="dashboard_month_minutes">00</span>
+                                </br>
+                                <span class="dashboard_caption_small">minutes</span>
+                            </li>
+
+                        </ul>
+
+                    </div>
+                </li>
+
+            </ul>
+			</div>
+
+		
         <div id="center_section" style="display: none">
-            <div style="text-align: center;width:20%;display: none" class="button" onclick="testButton()">Test</div>
-
+			
             <div id="timerPanel">
-                <span class="button" id="startButton" onclick="start()">Start</span>
+                
 
                 <div class="timerDiv" id="time"></div>
-                <div id="timerProgressBar">
+               <!-- <div id="timerProgressBar">
                     <div id="progressLabel"></div>
-                </div>
+                </div> -->
                 <span class="button" id="addManualLapButton">Add Manually</span>
+				<span class="button" id="startButton" onclick="start()">Start</span>
             </div>
 
             <div class="section" id="addManualLapSection" style="display: none">
@@ -71,87 +144,9 @@
                 <span class="grayButton" id="addManualLap_Save">Save</span>
             </div>
 
-            <div id="today_so_far"></div>
-            <div id="why_stop">
-                <div style="text-align: left;padding: 0px;margin-bottom: 12px;font-size: 22px;font-weight: bold">Why did
-                    you
-                    stop?
-                </div>
 
-                <ul id="stopReasonButtons">
-                    <li class="button">Internet</li>
-                    <li class="button">Food/Bathroom</li>
-                    <li class="button">Toilet</li>
-                    <li class="button" onclick="displayOtherTextBox()">Other</li>
-                </ul>
-
-                <textarea id="otherTextBox" rows="5" cols="50">
-                </textarea>
-            </div>
-
-            <ul class="section" id="dashboard">
-                <li class="dashboard_box" id="dashboard_today">
-                    <div class="dashboard_title">Today</div>
-                    <div class="dashboard_content">
-
-                        <ul>
-                            <li>
-                                <span class="dashboard_time_large" id="dashboard_today_hours">30</span>
-                                <span class="dashboard_caption_large">hours</span>
-                            </li>
-                            <li>
-                                <span class="dashboard_time_small" id="dashboard_today_minutes">5</span>
-                                </br>
-                                <span class="dashboard_caption_small">minutes</span>
-                            </li>
-
-                        </ul>
-
-                    </div>
-                </li>
-
-
-                <li class="dashboard_box" id="dashboard_week">
-                    <div class="dashboard_title">This Week</div>
-                    <div class="dashboard_content">
-
-                        <ul>
-                            <li>
-                                <span class="dashboard_time_large">45</span>
-                                <span class="dashboard_caption_large">hours</span>
-                            </li>
-                            <li>
-                                <span class="dashboard_time_small">58</span>
-                                </br>
-                                <span class="dashboard_caption_small">minutes</span>
-                            </li>
-
-                        </ul>
-
-                    </div>
-                </li>
-                <li class="dashboard_box" id="dashboard_month">
-                    <div class="dashboard_title">This Month</div>
-                    <div class="dashboard_content">
-
-                        <ul>
-                            <li>
-                                <span class="dashboard_time_large">135</span>
-                                <span class="dashboard_caption_large">hours</span>
-                            </li>
-                            <li>
-                                <span class="dashboard_time_small">24</span>
-                                </br>
-                                <span class="dashboard_caption_small">minutes</span>
-                            </li>
-
-                        </ul>
-
-                    </div>
-                </li>
-
-            </ul>
-
+			<div style="display:none">
+			<div class="expandCollapseTitle" id="this_week_title">Weekly Table</div>
             <div class="section" id="this_week" onclick="buildWeekTable()">
 
 
@@ -170,6 +165,27 @@
                     </tbody>
                 </table>
 
+            </div>
+			</div>
+        </div>
+		<div class="expandCollapseTitle" id="goalSection_title">Daily Goal</div>
+        <div id="goalSection" class="section">
+			
+            <span id="todayDate">Today: </span><br/>
+            <span id="goalTitle">The Daily goal is:</span>
+            
+            <br/>
+            <span id="updateDayGoal" class="grayButton">Update Daily Goal
+
+            </span>
+
+            <div id="updateDayGoalDiv" style="display: none">
+                <br/>
+                <span>Set the daily goal:</span>
+                <span style="width:30%;display: inline-block" id="goalSlider"></span>
+                <span id="goalTimeToSet">01:00</span>
+                <span id="setDayGoal" onclick="setDayGoal()" class="button">Set</span>
+                <!-- toggleVisibility missing -->
             </div>
 
         </div>

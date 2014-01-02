@@ -3,6 +3,12 @@ var UPDATE_INTERVAL=500;
 var currentGoalLength=0;
 var currentDailyProgress=0;
 
+/*
+Parse.com constants
+*/
+var WEEKLY_GOAL_TYPE = "WEEKLY";
+var MONTHLY_GOAL_TYPE = "MONTHLY";
+
 // TODO: wrap in a cookie Handler object - when I learn OO!
 /*
  ================
@@ -54,7 +60,6 @@ var clsStopwatch = function () {
     this.stop = function () {
         // If running, update elapsed time otherwise keep it
         lapTime = startAt ? lapTime + now() - startAt : lapTime;
-        console.log("LAPTIME: " + lapTime);
         startAt = 0; // Paused
     };
 
@@ -122,7 +127,6 @@ function start() {
     var button = document.getElementById("startButton");
 
     if (button.innerHTML == "Start") {
-        document.getElementById("why_stop").style.display = "none";
         clocktimer = setInterval("update()", UPDATE_INTERVAL);
         x.start();
     }
@@ -139,34 +143,23 @@ function start() {
 }
 
 function saveLap(value, jqueryPressedElement, callback) {
-    toggleLoading(jqueryPressedElement);
-    var TestObject = Parse.Object.extend("Laps");
-    var testObject = new TestObject();
+    
+	if (value>0){	
+		toggleLoading(jqueryPressedElement);
+		var TestObject = Parse.Object.extend("Laps");
+		var testObject = new TestObject();
 
-    testObject.save({length: value, date: getShortDate()}).then(function () {
-        var totalLength = 0;
-
-        var Laps = Parse.Object.extend("Laps");
-        var query = new Parse.Query(Laps);
-        query.equalTo("date", getShortDate());
-        query.find().then(function (results) {
-
-                for (var i = 0; i < results.length; i++) {
-                    var object = results[i];
-                    totalLength += parseInt(object.get('length'));
-                }
-                document.getElementById("today_so_far").innerHTML = "Time spent: " + secondsToString(totalLength);
-                toggleLoading(jqueryPressedElement);
-                if (callback) callback();
-                updateAllObjects();
-            }
-        );
-    });
+		testObject.save({length: value, date: getShortDate()}).then(function(){
+			toggleLoading(jqueryPressedElement);
+			updateAllObjects();
+			if (callback){callback()};
+		});
+	}
 }
 
 function updateAllObjects(){
-    buildWeekTable();
-    updateProgressBar();
+    //buildWeekTable();
+    //updateProgressBar();
     updateDashboard();
 }
 
@@ -176,6 +169,13 @@ function updateAllObjects(){
  ================
  */
 
+ function dividedValueToPercentage(val){
+		var percentage = val * 100;
+        percentage = Math.ceil(percentage * 10) / 10;
+        percentage = (!isNaN(percentage) && percentage != Infinity) ? percentage + "%" : "0%";
+		return percentage;
+}
+ 
 function pad(num, size) {
     var s = "0000" + num;
     return s.substr(s.length - size);
@@ -195,23 +195,21 @@ function formatTime(time) {
     return newTime;
 }
 
-function getShortDate(offset) {
+function getShortDate(date) {
 
-    offset = offset || 0;
-
-    var today = new Date();
-    today.setDate(today.getDate() + offset);
-    var dd = today.getDate();
-    var mm = today.getMonth() + 1; //January is 0!
-    var yyyy = today.getFullYear();
+    if (!date) {date = new Date();}
+    
+    var dd = date.getDate();
+    var mm = date.getMonth() + 1; //January is 0!
+    var yyyy = date.getFullYear();
     if (dd < 10) {
         dd = '0' + dd
     }
     if (mm < 10) {
         mm = '0' + mm
     }
-    today = mm + '/' + dd + '/' + yyyy;
-    return today;
+    date = mm + '/' + dd + '/' + yyyy;
+    return date;
 }
 
 function timeStringToSeconds(string) {
@@ -263,6 +261,28 @@ function test(string) {
     document.getElementById('todayDate').innerHTML += ";" + string;
 }
 
+function findFirstDateInTheWeek(date){
+    
+    date = new Date(date);
+    
+    while (date.getDay()!=0){
+        date.setDate(date.getDate()-1);
+    }
+    
+    return date;
+}
+
+function findFirstDateInMonth(date){
+    
+    date = new Date(date);
+    
+    while (date.getDate()!=1){
+        date.setDate(date.getDate()-1);
+    }
+    
+    return date;
+}
+
 /*
  ================
  OnLoad
@@ -285,7 +305,7 @@ function show() {
 
     time.innerHTML = formatTime(x.time()); // set the timer initial time
 
-    isDailyGoalSet();
+   
     updateAllObjects();
 }
 
@@ -427,6 +447,23 @@ function callbackBuildWeekTable(days) {
 
 /*
  ================
+ All Goals
+ ================
+ */
+//TODO
+function areAllGoalsSet(dayToCheck) {
+    var date = dayToCheck || getShortDate();
+
+    var DailyGoals = Parse.Object.extend("DailyGoals");
+    var query = new Parse.Query(DailyGoals);
+
+    query.equalTo("date", date);
+    toggleLoading("#goalTime");
+    query.find().then(callbackIsDailyGoalSet);
+}
+
+/*
+ ================
  Daily Goal
  ================
  */
@@ -449,8 +486,6 @@ function isDailyGoalSet(dayToCheck) {
 function callbackIsDailyGoalSet(results) {
     toggleLoading('#goalTime');
     if (results[0]) {
-        // toggleGoalElementsVisibility(false);
-        //document.getElementById("goalTime").innerHTML = secondsToString(results[0].get("goal")).substr(0, 5);
         currentGoalLength = parseInt(results[0].get("goal"));
         updateProgressBar(); //TODO:SYNC the daily goal and daily progress methods to update the progress bar
         $("#goalTime").text(secondsToString(results[0].get("goal")).substr(0, 5));
@@ -462,14 +497,67 @@ function callbackIsDailyGoalSet(results) {
     }
 }
 
-function toggleGoalElementsVisibility(show) {
-    /*document.getElementById('goalInput').style.display = show == true ? "" : "none";
-     document.getElementById('setDayGoal').style.display = show == true ? "" : "none";
-     document.getElementById('center_section').style.display = show == true ? "none" : "";
-     document.getElementById('updateDayGoal').style.display = show == true ? "none" : "";
-     document.getElementById('goalTitle').innerHTML = show == true ? "Set your goal for today: " : "The daily goal is: ";*/
+function isWeeklyGoalSet(){
+	var promise = $.Deferred();
+
+	var date = getShortDate(findFirstDateInTheWeek(getShortDate()));
+	$.when( isGoalSet(date,WEEKLY_GOAL_TYPE).done(function(value) {
+		promise.resolve();
+		if (!value){
+			$("#setWeeklyGoalSection").slideDown();
+		}
+		else{
+			$("#goalTime_week").text(getGoalTime(value.get("goal")));
+		}
+	}));
+	
+	return promise.promise();
 }
 
+function setWeeklyGoal(){
+	var goal = timeStringToSeconds($("#goalTime_week").text());
+	var date = getShortDate(findFirstDateInTheWeek(getShortDate()));
+	setGoal(date,WEEKLY_GOAL_TYPE,goal);
+}
+
+function isGoalSet(date,type){
+	var promise = $.Deferred();
+    var parseGoal = Parse.Object.extend("Goals");
+    var query = new Parse.Query(parseGoal);
+    query.equalTo("date", date);
+	query.equalTo("type", type);
+    query.first().then(function(result){
+		promise.resolve(result);
+	});
+	return promise.promise();
+}
+
+function setGoal(date,type,length){
+	var parseGoal = Parse.Object.extend("Goals");
+    var query = new Parse.Query(parseGoal);
+	var parseGoalRecord;
+	//alert(date+";"+type+";"+length)
+	
+	$.when( isGoalSet(date,type).done(function(value) {
+		if(value){
+			parseGoalRecord = value;
+			parseGoalRecord.set("goal", length);
+		}
+		else{
+			parseGoalRecord = new parseGoal();
+			parseGoalRecord.set("date", date);
+            parseGoalRecord.set("goal", length);
+			parseGoalRecord.set("type", type);
+		}
+		
+		parseGoalRecord.save().then(function(){
+			$("#setWeeklyGoalSection").hide(); //TODO:CHANGE
+			updateAllObjects();
+		});
+    }));
+}
+
+//TODO: move to setGoal
 function setDayGoal() {
 
     toggleLoading('#setDayGoal');
@@ -498,9 +586,6 @@ function setDayGoal() {
                 dayParseInstance.set("goal", howLong);
             }
             dayParseInstance.save({success: function () {
-                /*$('#goalTime').animate({color:'red'},"fast")
-                 .animate({'font-size':'1.5em'},2000)
-                 .animate({'font-size':'1em',color:'black'},"fast");*/
                 $('#goalTime').text($('#goalTimeToSet').text());
                 $('#updateDayGoal').click();
                 $('#center_section').show();
@@ -538,22 +623,32 @@ function testButton() {
 
 function getTotalLapLengthByDate(startDate,endDate){
 
-    if (endDate===undefined) {endDate=startDate};
-
+	var promise = $.Deferred();
+	
+    if (endDate===undefined || endDate===startDate) {endDate=new Date(startDate); endDate.setDate(endDate.getDate()+1);};
 
     var Laps = Parse.Object.extend("Laps");
     var query = new Parse.Query(Laps);
-    query.equalTo("date", startDate);
+    //query.equalTo("date", startDate);
+	
+	//alert("start: " + startDate + "; end: " + endDate);
+	query.greaterThanOrEqualTo("createdAt", startDate);
+	query.lessThanOrEqualTo("createdAt", endDate);
+	query.limit(1000);
+		
     query.find().then(function (results) {
         var totalLength = 0;
+		
+		//alert (results.length);
         for (var i = 0; i < results.length; i++) {
             var object = results[i];
             totalLength += parseInt(object.get('length'));
         }
-
-        updateDashboardCallback(totalLength);
+		//alert("startDate: " + startDate + "totalLength: " + totalLength);
+		promise.resolve(totalLength);
     });
-
+	
+	return promise.promise();
 }
 
 /*
@@ -562,14 +657,50 @@ function getTotalLapLengthByDate(startDate,endDate){
  *  ----------------
  * */
 
+
+ 
 function updateDashboard(){
-    getTotalLapLengthByDate(getShortDate());
+
+	var today = new Date(getShortDate());
+	var todayEnd = new Date(getShortDate());
+	todayEnd.setHours(23);
+	todayEnd.setMinutes(59);
+	
+	isDailyGoalSet();
+	
+
+	// Update daily
+	toggleLoading('#dashboard_today_hours');
+	$.when( getTotalLapLengthByDate(today,todayEnd).done(function(value) {
+			$("#dashboard_today_hours").text(secondsToString(value).split(":")[0]);
+			$("#dashboard_today_minutes").text(secondsToString(value).split(":")[1]);			
+			$("#daily_goal_percentage").text(dividedValueToPercentage(value/currentGoalLength));
+			toggleLoading('#dashboard_today_hours');
+    }));
+	
+	// Update weekly
+	$.when(isWeeklyGoalSet().done(function(){
+	toggleLoading('#dashboard_week_hours');
+	$.when( getTotalLapLengthByDate(findFirstDateInTheWeek(today),todayEnd ).done(function(value) {
+			$("#dashboard_week_hours").text(secondsToString(value).split(":")[0]);
+			$("#dashboard_week_minutes").text(secondsToString(value).split(":")[1]);
+			var weeklyGoal = timeStringToSeconds($("#goalTime_week").text());
+			$("#weekly_goal_percentage").text(dividedValueToPercentage(value/weeklyGoal));
+			toggleLoading('#dashboard_week_hours');
+		}));
+	}));
+	
+	// Update monthly
+	toggleLoading('#dashboard_month_hours');
+	$.when( getTotalLapLengthByDate(findFirstDateInMonth(today),todayEnd ).done(function(value) {
+			$("#dashboard_month_hours").text(secondsToString(value).split(":")[0]);
+			$("#dashboard_month_minutes").text(secondsToString(value).split(":")[1]);
+			toggleLoading('#dashboard_month_hours');
+    }));
 }
 
 function updateDashboardCallback(length){
-
-    $("#dashboard_today_hours").text(secondsToString(length).split(":")[0]);
-    $("#dashboard_today_minutes").text(secondsToString(length).split(":")[1]);
+    
 }
 
 /*
@@ -601,6 +732,14 @@ $(document).ready(function () {
             $('#addManualLapButton').click()
         });
     });
+	
+	$('.expandCollapseTitle').click(function(){
+		$(this).next().slideToggle();
+	});
+	
+	$("#weekly_goal").click(function(){
+		$("#setWeeklyGoalSection").toggle();
+	});
 
 });
 
@@ -638,6 +777,14 @@ $(function () {
             $('#goalTimeToSet').text(getGoalTime(ui.value));
         }
     });
+	
+	$("#weeklyGoalSlider").slider({
+        max: 108000,
+        step: 3600,
+        change: function (event, ui) {
+            $('#goalTime_week').text(getGoalTime(ui.value));
+        }
+    });
 
     var progressbar = $( "#progressbar" ),
         progressLabel = $( "#progressLabel" );
@@ -653,4 +800,5 @@ $(function () {
     });
 
 });
+
 

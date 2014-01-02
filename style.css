@@ -15,6 +15,10 @@ h2 {
     margin-top: 0px;
 }
 
+ul{
+margin: 0;
+}
+
 
 
 #startButton {
@@ -90,11 +94,18 @@ h2 {
 
 .section{
     padding: 20px;
-    margin: 8px;
+    
     border-radius: 3px;
     border: 1px solid #d5e0e4;
     color: #333;
     background: #f8f8f8;
+}
+
+.expandCollapseTitle{
+	background: #838383;
+	color:#FFFFFF;
+	padding:8px;
+	margin-top:1px;
 }
 
 .grayButton{
@@ -122,6 +133,30 @@ h2 {
     cursor:pointer;
 }
 
+.smallGrayButton{
+    padding:1px 8px 1px 8px;
+    display: inline-block;
+    cursor:pointer;
+
+    border: 1px solid #E7E7E7;
+}
+
+.smallGrayButton:hover{
+    background-color: #F8F8F8;
+    border: 1px solid #C6C6C6;
+    color: #222222;
+}
+
+.smallGrayButton-sel{
+    background-color: #E0E0E0;
+    border: 1px solid #D7D7D7;
+    color: #777777;
+    margin-top: 8px;
+    padding:4px 8px 4px 8px;
+    display: inline-block;
+    cursor:pointer;
+}
+
 
 #this_week_table{
     width: 66%;
@@ -135,12 +170,10 @@ h2 {
 }
 
 #this_week_table tbody tr:hover{
-
     background: #E8E8E8;
 }
 
 #timerPanel{
-    margin: 15px;
     padding: 8px;
     text-align: center;
 }
@@ -166,6 +199,12 @@ h2 {
     text-shadow: 1px 1px 0 #fff;
 }
 
+.slider{
+	margin-left:8px;
+	margin-right:12px;
+	font-size:12px;
+}
+
 #timerProgressBar{
     width: 20%;
     margin-left: auto;
@@ -178,14 +217,15 @@ h2 {
     font-size: 20px;
     font-weight: bold;
     list-style-type: none;
-
+	text-align:center;
+	margin-bottom:15px;
 }
 
 .dashboard_box{
     display: inline-block;
     margin-left: 10px;
     border:1px solid #ffcaca;
-    width: 25%;
+    width: 30%;
 }
 
 .dashboard_title{
@@ -208,7 +248,7 @@ h2 {
 .dashboard_content li{
     display: inline-block;
     margin-right: 10px;
-    margin-left: 10px;
+    
 }
 
 .dashboard_content ul{
@@ -224,7 +264,7 @@ h2 {
 .dashboard_caption_large{
     color:darkgray;
     font-size: 16px;
-    margin-top:-12px;
+    margin-top:-10px;
     display: block;
     line-height: 10px;
 
@@ -241,3 +281,26 @@ h2 {
     display: block;
     line-height: 10px;
 }
+
+.goal{
+	padding-top:8px;
+	margin-top:8px;
+	color:darkgray;
+	border-top:1px solid darkgray;
+	width:100%;
+	
+}
+.goalPercentage{
+	padding-bottom:8px;
+	margin-bottom:8px;
+	color:darkgray;
+	border-bottom:1px solid darkgray;
+	display:block;
+	width:100%;
+		
+}
+
+.goalTime{
+	color:red;
+}
+
