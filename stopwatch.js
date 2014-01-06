@@ -475,9 +475,9 @@ function areAllGoalsSet() {
 
     isDailyGoalSet()
         .then(function (value) {
-            //alert("daily before: " + answer);
+
             answer = answer && (value != undefined);
-            //alert("daily after: " + answer);
+
         })
         .then(isWeeklyGoalSet()
             .then(function (value) {
@@ -549,9 +549,9 @@ function setDailyGoal() {
     });
 }
 
-function isDailyGoalSet() {
+function isDailyGoalSet(date) {
     var promise = $.Deferred();
-    var date = getShortDate();
+    date = date ? date: getShortDate();
 
     isGoalSet(date, DAILY_GOAL_TYPE).then(function (value) {
         promise.resolve(value);
@@ -786,6 +786,11 @@ $(document).ready(function () {
         window[fn]();
     });
 
+    $(".chartButton").click(function () {
+        $('.chartButton').removeClass('chartButtonSelected');
+        $(this).addClass('chartButtonSelected');
+    });
+
 });
 
 function toggleLoading(jqueryElementName) {
@@ -855,6 +860,16 @@ $(function () {
         }
     });
 
+    $(function () {
+        $("#datepicker").datepicker({maxDate: "+0D", onSelect: onSelect});
+        $("#datepicker").datepicker("setDate", "+0");
+
+        function onSelect(dateText, inst) {
+            chart(dateText);
+        }
+
+    });
+
 });
 
 
@@ -909,7 +924,7 @@ function getManualLapTotalLength(date) {
     return promise.promise();
 }
 
-function chart() {
+function chart(date) {
 
     var dps = [];
     var manualDps = [];
@@ -918,12 +933,13 @@ function chart() {
     var manualLapCount = 0;
     var length = 0;
 
+    var dateToCheck = date ? date : getShortDate();
 
     toggleLoading("#chart");
 
 
     // TODO: handle a case when there's no first lap!!!
-    findFirstLap(getShortDate())  // Get the first lap (use it as the manual lap start time)
+    findFirstLap(dateToCheck)  // Get the first lap (use it as the manual lap start time)
         .then(function (result) {
             if (result) {
                 firstLap = result
@@ -931,7 +947,7 @@ function chart() {
             ;
         })
         .then(function () {
-            return getManualLapTotalLength(getShortDate());  // Get today's total manual lap time
+            return getManualLapTotalLength(dateToCheck);  // Get today's total manual lap time
         })
         .then(function (result) {
             manualLapCount = result;
@@ -942,7 +958,7 @@ function chart() {
             }
         })
         .then(function () {
-            return getLaps(getShortDate());
+            return getLaps(dateToCheck);
         })
         .then(function (results) {
             for (var i = 0; i < results.length; i++) {
@@ -959,7 +975,7 @@ function chart() {
                 length = Math.ceil(length * 1000) / 1000;
                 dps.push({x: lapEnd, y: length, markerType: "none"});
 
-                if ((lapStart - prevLapEnd) > (1000 * 300)) {
+                if ((lapStart - prevLapEnd) > (1000 * 600)) {
                     dps[dps.length - 3].indexLabel = "SB";
                     dps[dps.length - 3].markerColor = "red";
                     dps[dps.length - 3].markerType = "circle";
@@ -975,12 +991,13 @@ function chart() {
                 b = new Date(b.x);
                 return a > b ? -1 : a < b ? 1 : 0;
             });
-        }).then(isDailyGoalSet)
-
+        }).then(function(){return isDailyGoalSet(dateToCheck)})
         .then(function (value) {
-            var goal = value.get("goal") / 3600;
-            goalDps.push({x: dps[0].x, y: goal});
-            goalDps.push({x: dps[dps.length - 1].x, y: goal});
+            if (dps.length>0 && value) {
+                var goal = value.get("goal") / 3600;
+                goalDps.push({x: dps[0].x, y: goal});
+                goalDps.push({x: dps[dps.length - 1].x, y: goal});
+            }
         })
         .then(function () {
 

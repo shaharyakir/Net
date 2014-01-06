@@ -319,3 +319,40 @@ margin: 0;
 .goalTime:hover{
     color:darkred;
 }
+
+/*
+Chart
+*/
+.chartButton{
+    margin-top: 8px;
+    padding:4px 8px 4px 8px;
+    display: inline-block;
+    cursor:pointer;
+    border: 1px solid #E7E7E7;
+    width: 80px;
+}
+
+.chartButton:hover{
+    border: 1px solid #ff6b6a;
+}
+
+.chartButtonSelected{
+    background: #ff6b6a;
+    color: #FFFFFF;
+}
+
+.chartButtonSelected:hover{
+    border: 1px solid #E7E7E7;
+}
+
+#datepicker{
+    background-color: inherit;
+    border: 1px grey solid;
+    cursor: none;
+    font-family: inherit;
+    text-align: center;
+}
+
+#datepicker:hover{
+    border: 1px solid #ff6b6a;
+}
