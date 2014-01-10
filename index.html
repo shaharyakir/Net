@@ -18,200 +18,277 @@
 
 <div id="outerBox">
 
-    <div id="innerBox">
+<div id="innerBox">
+
+
+<div id="title">
+    <h1 style="margin-bottom: 0">Net Time</h1>
+
+    <h2>Project: Javascript Development</h2>
+
+</div>
+
+<style>
+    .tempclass{
+        color:darkgray;
+        font-weight: bold;
+    }
+</style>
+
+
+<div class="section" style="height:375px;width: 220px;float: left; margin-bottom: 20px;">
+    <div style="text-align: center">
+        <img src="images/achievements.png" style="width: 24px; display: block; margin-left: auto;margin-right: auto; margin-bottom: -5px"/>
+        <span style="color:darkgray;font-size:18px;font-weight: bold">Achievements</span>
+    </div>
+    <div style="text-align: center; font-weight: bold">
+        <span style="font-size:72px;">33</span>
+        <span style="font-size: 14px;color:darkgray">hours</span>
+    </div>
+    <div>
+      <div style="margin-top:12px; ">
+          <span class="tempclass">Total Time Spent</span>
+          <span style="float: right">33:05</span>
+      </div>
+        <div style="margin-top: 6px">
+            <span class="tempclass">Goal</span>
+            <span style="float: right">40:00</span>
+        </div>
+        <div style="margin-top: 6px">
+            <span class="tempclass">% Completed</span>
+            <span style="float: right">97%</span>
+        </div>
+        <div style="margin-top: 6px">
+            <span class="tempclass">Left</span>
+            <span style="float: right">6:55</span>
+        </div>
+        <div style="margin-top: 6px">
+            <span class="tempclass">Best Possible</span>
+            <span style="float: right">17:55</span>
+        </div>
+    </div>
 
 
 
-        <div id="title">
-            <h1 style="margin-bottom: 0">Net Time</h1>
+    <div id="chartButtons" style="text-align: center;margin-top:12px;">
+        <span style="width: 50px" class="chartButton chartButtonSelected">Day</span>
+        <span style="width: 50px" class="chartButton">Week</span>
+        <span style="width: 50px" class="chartButton">Month</span>
+    </div>
+</div>
 
-            <h2>Project: Javascript Development</h2>
+<div id="chart" class="section" style="width: 650px; float:left;margin-bottom: 20px; height:375px;margin-left:20px">
+    <div style="text-align: center">
+        <img src="images/settings.png" style="width: 24px; display: block; margin-left: auto;margin-right: auto; margin-bottom: -5px"/>
+        <span style="color:darkgray;font-size:18px;font-weight: bold">Progress Graph</span>
+    </div>
 
+        <span class="smallGrayButton" onclick="chart()">Refresh</span>
+
+
+
+        <span style="float: right;clear: both;">Date: <input type="text" id="datepicker"></span>
+
+        <div id="chartContainer" style="height: 255px; width: 100%;">
         </div>
 
-        <div class="expandCollapseTitle">Dashboard</div>
-        <div id="dashboard" class="section">
 
-            <ul>
+        <div id="chartButtons" style="text-align: center">
+            <span class="chartButton chartButtonSelected">Day</span>
+            <span class="chartButton">Week</span>
+            <span class="chartButton">Month</span>
+        </div>
 
-                <li class="dashboard_box" id="dashboard_today">
-                    <div class="dashboard_title">Today</div>
-                    <div class="dashboard_content">
+</div>
 
-                        <ul>
-                            <li class="goalPercentage">
-                                Completed
-                                <span class="goalTime" id="daily_goal_percentage"></span>
-                            </li>
+<div style="clear: both"></div>
 
-                            <li>
-                                <span class="dashboard_time_large" id="dashboard_today_hours">00</span>
-                                <span class="dashboard_caption_large">hours</span>
-                            </li>
-                            <li>
-                                <span class="dashboard_time_small" id="dashboard_today_minutes">00</span>
-                                </br>
-                                <span class="dashboard_caption_small">minutes</span>
-                            </li>
 
-                            <li class="goal" id="daily_goal">
-                                <span>Goal</span>
-                                <span class="goalTime" id="goalTime_day">00:00</span>
+<div class="expandCollapseTitle">Dashboard</div>
+<div id="dashboard" class="section">
+
+    <ul>
+
+        <li class="dashboard_box" id="dashboard_today">
+            <div class="dashboard_title">Today</div>
+            <div class="dashboard_content">
+
+                <ul>
+                    <li class="goalPercentage">
+                        Completed
+                        <span class="goalTime" id="daily_goal_percentage"></span>
+                    </li>
+
+                    <li>
+                        <span class="dashboard_time_large" id="dashboard_today_hours">00</span>
+                        <span class="dashboard_caption_large">hours</span>
+                    </li>
+                    <li>
+                        <span class="dashboard_time_small" id="dashboard_today_minutes">00</span>
+                        </br>
+                        <span class="dashboard_caption_small">minutes</span>
+                    </li>
+
+                    <li class="goal" id="daily_goal">
+                        <span>Goal</span>
+                        <span class="goalTime" id="goalTime_day">00:00</span>
 							<span id="setDailyGoalSection" style="display:none">
 								<span id="dailyGoalSlider"
                                       class="slider goalSlider"></span>
 								<span id="setDailyGoalButton" class="smallGrayButton setGoalButton">Set</span>
 							</span>
-                                <span style="margin-left: 10px">Left</span>
-                                <span class="goalTime" id="goalTime_day_left">00:00</span>
-                                <br/>
-                                <span style="margin-left: 10px">Best Possible Time</span>
-                                <span class="goalTime" id="goalTime_day_best_time">00:00</span>
-                            </li>
-                        </ul>
+                        <span style="margin-left: 10px">Left</span>
+                        <span class="goalTime" id="goalTime_day_left">00:00</span>
+                        <br/>
+                        <span style="margin-left: 10px">Best Possible Time</span>
+                        <span class="goalTime" id="goalTime_day_best_time">00:00</span>
+                    </li>
+                </ul>
 
-                    </div>
-                </li>
+            </div>
+        </li>
 
-                <li class="dashboard_box" id="dashboard_week">
-                    <div class="dashboard_title">This Week</div>
-                    <div class="dashboard_content">
+        <li class="dashboard_box" id="dashboard_week">
+            <div class="dashboard_title">This Week</div>
+            <div class="dashboard_content">
 
-                        <ul>
-                            <li class="goalPercentage">
-                                Completed
-                                <span class="goalTime" id="weekly_goal_percentage"></span>
-                            </li>
-                            <li>
-                                <span class="dashboard_time_large" id="dashboard_week_hours">00</span>
-                                <span class="dashboard_caption_large">hours</span>
-                            </li>
-                            <li>
-                                <span class="dashboard_time_small " id="dashboard_week_minutes">00</span>
-                                </br>
-                                <span class="dashboard_caption_small">minutes</span>
-                            </li>
-                            <li class="goal" id="weekly_goal">
-                                Goal
-                                <span class="goalTime" id="goalTime_week">00:00</span>
+                <ul>
+                    <li class="goalPercentage">
+                        Completed
+                        <span class="goalTime" id="weekly_goal_percentage"></span>
+                    </li>
+                    <li>
+                        <span class="dashboard_time_large" id="dashboard_week_hours">00</span>
+                        <span class="dashboard_caption_large">hours</span>
+                    </li>
+                    <li>
+                        <span class="dashboard_time_small " id="dashboard_week_minutes">00</span>
+                        </br>
+                        <span class="dashboard_caption_small">minutes</span>
+                    </li>
+                    <li class="goal" id="weekly_goal">
+                        Goal
+                        <span class="goalTime" id="goalTime_week">00:00</span>
 							<span id="setWeeklyGoalSection" style="display:none">
 								<span id="weeklyGoalSlider"
                                       class="slider goalSlider"></span>
 								<span id="setWeeklyGoalButton" class="smallGrayButton setGoalButton">Set</span>
 							</span>
-                            </li>
-                        </ul>
+                    </li>
+                </ul>
 
 
-                    </div>
-                </li>
-                <li class="dashboard_box" id="dashboard_month">
-                    <div class="dashboard_title">This Month</div>
-                    <div class="dashboard_content">
+            </div>
+        </li>
+        <li class="dashboard_box" id="dashboard_month">
+            <div class="dashboard_title">This Month</div>
+            <div class="dashboard_content">
 
-                        <ul>
-                            <li class="goalPercentage">
-                                Completed
-                                <span class="goalTime" id="monthly_goal_percentage"></span>
-                            </li>
-                            <li>
-                                <span class="dashboard_time_large" id="dashboard_month_hours">00</span>
-                                <span class="dashboard_caption_large">hours</span>
-                            </li>
-                            <li>
-                                <span class="dashboard_time_small" id="dashboard_month_minutes">00</span>
-                                </br>
-                                <span class="dashboard_caption_small">minutes</span>
-                            </li>
+                <ul>
+                    <li class="goalPercentage">
+                        Completed
+                        <span class="goalTime" id="monthly_goal_percentage"></span>
+                    </li>
+                    <li>
+                        <span class="dashboard_time_large" id="dashboard_month_hours">00</span>
+                        <span class="dashboard_caption_large">hours</span>
+                    </li>
+                    <li>
+                        <span class="dashboard_time_small" id="dashboard_month_minutes">00</span>
+                        </br>
+                        <span class="dashboard_caption_small">minutes</span>
+                    </li>
 
-                            <li class="goal" id="monthly_goal">
-                                Goal
-                                <span class="goalTime" id="goalTime_month">00:00</span>
+                    <li class="goal" id="monthly_goal">
+                        Goal
+                        <span class="goalTime" id="goalTime_month">00:00</span>
 							<span id="setMonthlyGoalSection" style="display:none">
 								<span id="monthlyGoalSlider"
                                       class="slider goalSlider"></span>
 								<span id="setMonthlyGoalButton" class="smallGrayButton setGoalButton">Set</span>
 							</span>
-                            </li>
+                    </li>
 
-                        </ul>
+                </ul>
 
-                    </div>
-                </li>
+            </div>
+        </li>
 
-            </ul>
+    </ul>
+</div>
+
+
+<div id="center_section" style="display: none">
+    <div class="expandCollapseTitle">Timer</div>
+    <div id="timerPanel" class="section">
+
+
+        <div class="timerDiv" id="time"></div>
+        <!-- <div id="timerProgressBar">
+             <div id="progressLabel"></div>
+         </div> -->
+        <span class="button" id="addManualLapButton">Add Manually</span>
+        <span class="button" id="startButton" onclick="start()">Start</span>
+    </div>
+
+    <div class="section" id="addManualLapSection" style="display: none">
+        <div>Date:
+            <span id="addManualLap_Date"></span>
         </div>
-
-
-        <div id="center_section" style="display: none">
-            <div class="expandCollapseTitle">Timer</div>
-            <div id="timerPanel" class="section">
-
-
-                <div class="timerDiv" id="time"></div>
-                <!-- <div id="timerProgressBar">
-                     <div id="progressLabel"></div>
-                 </div> -->
-                <span class="button" id="addManualLapButton">Add Manually</span>
-                <span class="button" id="startButton" onclick="start()">Start</span>
-            </div>
-
-            <div class="section" id="addManualLapSection" style="display: none">
-                <div>Date:
-                    <span id="addManualLap_Date"></span>
-                </div>
-                <div>
-                    <span>Length:</span>
-                    <span id="addManualLap_Length">00:00</span>
-                    &nbsp
-                    <span style="width:30%;display: inline-block" id="manualLapSlider"></span>
-                </div>
-                <span class="grayButton" id="addManualLap_Save">Save</span>
-            </div>
-
-
-            <div style="display:none">
-                <div class="expandCollapseTitle" id="this_week_title">Weekly Table</div>
-                <div class="section" id="this_week" onclick="buildWeekTable()">
-
-
-                    <table id="this_week_table">
-                        <thead>
-                        <tr>
-                            <th>Day</th>
-                            <th>How Long</th>
-                            <th>Goal</th>
-                            <th>Percentage</th>
-                            <th>Work Began</th>
-                            <th>Work Ended</th>
-                        </tr>
-                        </thead>
-                        <tbody id="this_week_table_tbody">
-                        </tbody>
-                    </table>
-
-                </div>
-            </div>
-        </div>
-        <div class="expandCollapseTitle">Daily Analysis</div>
         <div>
-            <div id="chart" class="section">
-            <span class="smallGrayButton" onclick="chart()">Refresh</span>
-                <br/>
-                <br/>
-                <br/>
-                <p>Date: <input type="text" id="datepicker"></p>
+            <span>Length:</span>
+            <span id="addManualLap_Length">00:00</span>
+            &nbsp
+            <span style="width:30%;display: inline-block" id="manualLapSlider"></span>
+        </div>
+        <span class="grayButton" id="addManualLap_Save">Save</span>
+    </div>
+
+
+    <div style="display:none">
+        <div class="expandCollapseTitle" id="this_week_title">Weekly Table</div>
+        <div class="section" id="this_week" onclick="buildWeekTable()">
+
+
+            <table id="this_week_table">
+                <thead>
+                <tr>
+                    <th>Day</th>
+                    <th>How Long</th>
+                    <th>Goal</th>
+                    <th>Percentage</th>
+                    <th>Work Began</th>
+                    <th>Work Ended</th>
+                </tr>
+                </thead>
+                <tbody id="this_week_table_tbody">
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+</div>
+<div class="expandCollapseTitle">Daily Analysis</div>
+<div>
+    <div id="chart" class="section">
+        <span class="smallGrayButton" onclick="chart()">Refresh</span>
+        <br/>
+        <br/>
+        <br/>
+
+        <p>Date: <input type="text" id="datepicker"></p>
+
         <div id="chartContainer" style="height: 350px; width: 100%;">
         </div>
 
 
-                <div id="chartButtons" style="text-align: center">
-                    <span class="chartButton chartButtonSelected">Day</span>
-                    <span class="chartButton">Week</span>
-                    <span class="chartButton">Month</span>
-                </div>
-            </div>
+        <div id="chartButtons" style="text-align: center">
+            <span class="chartButton chartButtonSelected">Day</span>
+            <span class="chartButton">Week</span>
+            <span class="chartButton">Month</span>
+        </div>
     </div>
+</div>
 </div>
 </body>
 </html>
