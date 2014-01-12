@@ -1,9 +1,12 @@
+/*
+ Constants & Gloabal Vars
+ */
 var COOKIE_CURRENT_LAP = "currentLap";
 var HOUR = 3600;
 var MILLISECONDS = 1000;
 var UPDATE_INTERVAL = 500;
-var currentGoalLength = 0;
-var currentDailyProgress = 0;
+//var currentGoalLength = 0;
+//var currentDailyProgress = 0;
 
 /*
  Parse.com constants
@@ -109,12 +112,12 @@ function reset() {
 }
 function update() {
     time.innerHTML = formatTime(x.time());
-    currentDailyProgress += (UPDATE_INTERVAL / 1000);
-    updateProgressBar();
+//    currentDailyProgress += (UPDATE_INTERVAL / 1000);
+    //updateProgressBar();
     createCookie(COOKIE_CURRENT_LAP, x.time());
 }
 
-function updateProgressBar() {
+/*function updateProgressBar() {
 
     var percentage = ((currentDailyProgress / currentGoalLength) * 100);
     percentage = Math.ceil(percentage * 10) / 10;
@@ -123,7 +126,7 @@ function updateProgressBar() {
 
     $("#timerProgressBar").progressbar("option", "value", percentage);
     //  $( "#progressLabel").text( $( "#timerProgressBar").progressbar( "option","value" ) + "%" );
-}
+}*/
 
 function start() {
 
@@ -140,7 +143,6 @@ function start() {
 
         stop();
     }
-
     var newVal = button.innerHTML == "Start" ? "Stop" : "Start";
     button.innerHTML = newVal;
 }
@@ -307,7 +309,7 @@ function show() {
 
     initParse();
     chart();
-
+    $('.modal').show();
     initDailyProgress();
 
     time = document.getElementById('time');
@@ -336,7 +338,7 @@ function initDailyProgress() {
             totalLength += parseInt(object.get('length'));
         }
 
-        currentDailyProgress = parseInt(totalLength);
+        //currentDailyProgress = parseInt(totalLength);
     });
 }
 
@@ -700,7 +702,7 @@ function updateDashboard() {
         toggleLoading('#dashboard_today_hours');
         getTotalLapLengthByDate(today, todayEnd).then(function (value) {
             $("#dashboard_today_hours").text(secondsToString(value).split(":")[0]);
-            $("#dashboard_today_minutes").text(secondsToString(value).split(":")[1]);
+            $("#dashboard_today_time").text(secondsToString(value));
             var dailyGoal = timeStringToSeconds($("#goalTime_day").text());
             var dailyGoalLeft = dailyGoal - value;
             $("#daily_goal_percentage").text(dividedValueToPercentage(value / dailyGoal));
@@ -718,7 +720,7 @@ function updateDashboard() {
         toggleLoading('#dashboard_week_hours');
         getTotalLapLengthByDate(findFirstDateInTheWeek(today), todayEnd).then(function (value) {
             $("#dashboard_week_hours").text(secondsToString(value).split(":")[0]);
-            $("#dashboard_week_minutes").text(secondsToString(value).split(":")[1]);
+            $("#dashboard_week_time").text(secondsToString(value));
             var weeklyGoal = timeStringToSeconds($("#goalTime_week").text());
             $("#weekly_goal_percentage").text(dividedValueToPercentage(value / weeklyGoal));
             toggleLoading('#dashboard_week_hours');
@@ -730,7 +732,7 @@ function updateDashboard() {
         toggleLoading('#dashboard_month_hours');
         getTotalLapLengthByDate(findFirstDateInMonth(today), todayEnd).then(function (value) {
             $("#dashboard_month_hours").text(secondsToString(value).split(":")[0]);
-            $("#dashboard_month_minutes").text(secondsToString(value).split(":")[1]);
+            $("#dashboard_month_time").text(secondsToString(value));
             var monthlyGoal = timeStringToSeconds($("#goalTime_month").text());
             $("#monthly_goal_percentage").text(dividedValueToPercentage(value / monthlyGoal));
             toggleLoading('#dashboard_month_hours');
@@ -760,12 +762,12 @@ $(document).ready(function () {
 
     $('#addManualLapButton').click(function () {
         $('#addManualLapSection').slideToggle();
-        $(this).toggleClass("button-sel").toggleClass('button');
+        $(this).toggleClass("smallGrayButton-sel");
     });
 
     $('#addManualLap_Save').click(function () {
         var manualLapLength = $('#manualLapSlider').slider("value");
-        currentDailyProgress += manualLapLength;
+        //currentDailyProgress += manualLapLength;
         saveLap(manualLapLength, this, function () {
             $('#addManualLapButton').click()
         }, true);
@@ -786,11 +788,21 @@ $(document).ready(function () {
         window[fn]();
     });
 
-    $(".chartButton").click(function () {
-        $('.chartButton').removeClass('chartButtonSelected');
-        $(this).addClass('chartButtonSelected');
+    $(".day_week_month_button").click(function () {
+        $(this).siblings().removeClass('day_week_month_button_selected');
+        $(this).addClass('day_week_month_button_selected');
+
+        var id = $(this)[0].id
+        id = id.replace("_button","");
+        id = "#" + id;
+        $(id).siblings().hide();
+        $(id).show();
     });
 
+    $("#goals_icon").click(function(){
+        $("#set_goals_container").slideToggle();
+       // $(this).css('background-image',"images/goal_hover.png");
+    });
 });
 
 function toggleLoading(jqueryElementName) {
@@ -873,9 +885,7 @@ $(function () {
 });
 
 
-/* Chart
-
- */
+/* Chart */
 
 function getLaps(date) {
     var promise = $.Deferred();
