@@ -432,6 +432,15 @@ Chart
     background-image: url('images/goal_hover.png');
 }
 
+#user_icon {
+    background-position: center;
+    background-image:url('images/user.png');
+    background-size: contain;
+}
+#user_icon:hover {
+    background-image: url('images/user_hover.png');
+}
+
 #settings_panel{
     box-shadow: 0 1px 2px -2px gray;
     margin-bottom: 12px

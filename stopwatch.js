@@ -2,6 +2,8 @@
  Constants & Gloabal Vars
  */
 var COOKIE_CURRENT_LAP = "currentLap";
+var COOKIE_CURRENT_PROJECT = "currentProjectId";
+var COOKIE_CURRENT_PROJECT_TITLE = "currentProjectTitle";
 var HOUR = 3600;
 var MILLISECONDS = 1000;
 var UPDATE_INTERVAL = 500;
@@ -27,14 +29,15 @@ var DAILY_GOAL_TYPE = "DAILY";
  Cookie functions
  ================
  */
-function createCookie(name, value) {
+var cookieHandler = function(){
+this.createCookie = function (name, value) {
     var exdays = 365;
     var exdate = new Date();
     exdate.setDate(exdate.getDate() + exdays);
     value = escape(value) + ((exdays == null) ? "" : "; expires=" + exdate.toUTCString());
     document.cookie = name + "=" + value;
 }
-function readCookie(name) {
+this.readCookie = function (name) {
     var nameEQ = name + "=";
     var ca = document.cookie.split(';');
     for (var i = 0; i < ca.length; i++) {
@@ -43,10 +46,11 @@ function readCookie(name) {
         if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
     }
     return null;
-}
-function eraseCookie(name) {
-    createCookie(name, "", -1);
-}
+};
+this.eraseCookie = function (name) {
+    this.createCookie(name, "", -1);
+};
+};
 
 /*
  ================
@@ -94,6 +98,7 @@ var clsStopwatch = function () {
 var x = new clsStopwatch();
 var time;
 var clocktimer;
+var cookieHandlerInstance = new cookieHandler();
 /*
  ===========================
  Stopwatch related functions
@@ -118,7 +123,7 @@ function reset() {
 }
 function update() {
     time.innerHTML = formatTime(x.time());
-    createCookie(COOKIE_CURRENT_LAP, x.time());
+    cookieHandlerInstance.createCookie(COOKIE_CURRENT_LAP, x.time());
     document.title = "(" + formatTime(x.time()) + ")" + " Running";
 
 }
@@ -150,7 +155,7 @@ function saveLap(value, jqueryPressedElement, callback, isManual) {
         var TestObject = Parse.Object.extend("Laps");
         var testObject = new TestObject();
         isManual = isManual ? isManual : false;
-        testObject.save({length: value, date: getShortDate(), isManualLap: isManual,project:currentProject}).then(function () {
+        testObject.save({length: value, date: getShortDate(), isManualLap: isManual, project: currentProject}).then(function () {
             toggleLoading(jqueryPressedElement);
             updateAllObjects();
             if (callback) {
@@ -299,13 +304,12 @@ function findFirstDateInMonth(date) {
 function show() {
 
 
-    initParse();
 
 
     time = document.getElementById('time');
 
     // Restore unsaved lap if browser exited unexpectedly
-    var unsavedLap = readCookie(COOKIE_CURRENT_LAP);
+    var unsavedLap = cookieHandlerInstance.readCookie(COOKIE_CURRENT_LAP);
     if (unsavedLap > 0) {
         x.setLapTime(unsavedLap);
     }
@@ -478,7 +482,7 @@ function isGoalSet(date, type) {
     var query = new Parse.Query(parseGoal);
     query.equalTo("date", date);
     query.equalTo("type", type);
-    query.equalTo("project",currentProject)
+    query.equalTo("project", currentProject)
     query.first().then(function (result) {
 
         promise.resolve(result);
@@ -503,7 +507,7 @@ function setGoal(date, type, length) {
             parseGoalRecord.set("goal", length);
             parseGoalRecord.set("type", type);
         }
-        parseGoalRecord.set("project",currentProject);
+        parseGoalRecord.set("project", currentProject);
         parseGoalRecord.save().then(function () {
             promise.resolve();
             updateAllObjects();
@@ -640,7 +644,7 @@ function getTotalLapLengthByDate(startDate, endDate) {
     //alert("start: " + startDate + "; end: " + endDate);
     query.greaterThanOrEqualTo("createdAt", startDate);
     query.lessThanOrEqualTo("createdAt", endDate);
-    query.equalTo("project",currentProject);
+    query.equalTo("project", currentProject);
     query.limit(1000);
 
     query.find().then(function (results) {
@@ -724,6 +728,11 @@ function updateDashboard() {
 
 $(document).ready(function () {
 
+    initParse();
+
+    if (Parse.User.current() != null){
+        onUserLogin();
+    }
 
     $("#updateDayGoal").click(function () {
         $('#updateDayGoalDiv').slideToggle();
@@ -782,6 +791,22 @@ $(document).ready(function () {
         setting_show_breaks_on_graphs = $(this).is(':checked');
     });
 
+    $('#user_log_out_button').click(function () {
+        $('#user_log_out_panel').hide();
+        Parse.User.logOut();
+        $('#projects_list').text("");
+        $('#application').hide();
+        $('#user_login_container').fadeIn(1000);
+    });
+
+    $('#user_icon').mouseenter(function () {
+        $('#user_log_out_panel').slideDown();
+    });
+
+    $('#user_log_out_panel').mouseleave(function(){
+        $('#user_log_out_panel').slideUp();
+    });
+
     $('#login_button').click(function () {
 
         toggleLoading($(this));
@@ -798,9 +823,7 @@ $(document).ready(function () {
             else {
                 Parse.User.logIn($('#username_input').val(), "password").then(function () {
                     toggleLoading($('#login_button'));
-                    $('#user_login_container').hide();
-                    $('#projects_container').fadeIn(1000);
-                    loadProjects();
+                    onUserLogin();
                 });
             }
         });
@@ -828,25 +851,20 @@ $(document).ready(function () {
         });
     });
 
-    $("#projects_container").on('click','.project',function () {
-        var Project = Parse.Object.extend("Projects");
-        currentProject = new Project();
-        currentProject.id=$(this).attr("parseid");
-        currentProjectTitle = $(this).text();
-
-        $('#projects_container').hide();
-        $('#project_title').text(currentProjectTitle);
-        loadApplication();
+    $("#projects_container").on('click', '.project', function () {
+        cookieHandlerInstance.createCookie(COOKIE_CURRENT_PROJECT,$(this).attr("parseid"));
+        cookieHandlerInstance.createCookie(COOKIE_CURRENT_PROJECT_TITLE,$(this).text());
+        onProjectLoad($(this).attr("parseid"),$(this).text());
     });
 
-    $('#show_new_project_details_button').click(function(){
-       $('#new_project_details').slideDown();
+    $('#show_new_project_details_button').click(function () {
+        $('#new_project_details').slideDown();
     });
 
-    $('#add_project_button').click(function(){
+    $('#add_project_button').click(function () {
         var Project = Parse.Object.extend("Projects");
         var newProject = new Project();
-        newProject.save({title:$('#project_title_input').val(),user:Parse.User.current()}).then(function (object) {
+        newProject.save({title: $('#project_title_input').val(), user: Parse.User.current()}).then(function (object) {
             addProject(object);
             $('#new_project_details').slideUp();
             $('#project_title_input').val("");
@@ -870,11 +888,38 @@ function loadProjects() {
     });
 }
 
-function addProject(parseObject){
+function addProject(parseObject) {
     var element = "<div class='project' parseid='" + parseObject.id + "'>" + parseObject.get("title") + "</div>";
     $('#projects_list').append(element);
 }
 
+function onProjectLoad(id,title){
+    var Project = Parse.Object.extend("Projects");
+    currentProject = new Project();
+    currentProject.id = id;
+    currentProjectTitle = title;
+
+    $('#projects_container').hide();
+    $('#project_title').text(currentProjectTitle);
+    loadApplication();
+
+}
+
+function onUserLogin(){
+    $('#user_login_container').hide();
+    $('#projects_container').fadeIn(1000);
+    $('#current_user').text(Parse.User.current().getUsername());
+
+    var projectIdFromCookie = cookieHandlerInstance.readCookie(COOKIE_CURRENT_PROJECT);
+    var projectTitleFromCookie = cookieHandlerInstance.readCookie(COOKIE_CURRENT_PROJECT_TITLE);
+    if ((projectIdFromCookie != null && (projectTitleFromCookie !=null))){
+        projectTitleFromCookie = decodeURI(projectTitleFromCookie);
+        onProjectLoad(projectIdFromCookie,projectTitleFromCookie);
+    }
+    else{
+        loadProjects();
+    }
+}
 
 function loadApplication() {
     $('#application').fadeIn(1000);
@@ -978,7 +1023,7 @@ function getLaps(startDate, endDate) {
     query.greaterThanOrEqualTo("createdAt", new Date(startDate));
     query.lessThanOrEqualTo("createdAt", new Date(endDate));
     query.limit(1000);
-    query.equalTo("project",currentProject);
+    query.equalTo("project", currentProject);
     //query.equalTo("date", "01/12/2014");
     query.notEqualTo("isManualLap", true);
     query.ascending("createdAt");
@@ -1000,7 +1045,7 @@ function findFirstLap(startDate, endDate) {
     query.lessThanOrEqualTo("createdAt", new Date(endDate));
     query.limit(1000);
     query.notEqualTo("isManualLap", true);
-    query.equalTo("project",currentProject);
+    query.equalTo("project", currentProject);
     query.ascending("createdAt");
     query.first().then(function (result) {
         var val = result ? (result.createdAt - (result.get("length") * MILLISECONDS)) : undefined;
@@ -1024,7 +1069,7 @@ function getManualLapTotalLength(startDate, endDate) {
     query.lessThanOrEqualTo("createdAt", new Date(endDate));
     query.limit(1000);
     query.equalTo("isManualLap", true);
-    query.equalTo("project",currentProject);
+    query.equalTo("project", currentProject);
     query.find().then(function (results) {
         if (results) {
             for (var i = 0; i < results.length; i++) {
