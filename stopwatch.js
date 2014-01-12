@@ -7,6 +7,12 @@ var MILLISECONDS = 1000;
 var UPDATE_INTERVAL = 500;
 //var currentGoalLength = 0;
 //var currentDailyProgress = 0;
+//var currentProjectId;
+var currentProject;
+var currentProjectTitle;
+
+/* Settings*/
+var setting_show_breaks_on_graphs = false;
 
 /*
  Parse.com constants
@@ -112,21 +118,10 @@ function reset() {
 }
 function update() {
     time.innerHTML = formatTime(x.time());
-//    currentDailyProgress += (UPDATE_INTERVAL / 1000);
-    //updateProgressBar();
     createCookie(COOKIE_CURRENT_LAP, x.time());
+    document.title = "(" + formatTime(x.time()) + ")" + " Running";
+
 }
-
-/*function updateProgressBar() {
-
-    var percentage = ((currentDailyProgress / currentGoalLength) * 100);
-    percentage = Math.ceil(percentage * 10) / 10;
-    percentage = (!isNaN(percentage) && percentage != Infinity) ? percentage : 0;
-    //percentage = percentage > 100 ? 100 : percentage;
-
-    $("#timerProgressBar").progressbar("option", "value", percentage);
-    //  $( "#progressLabel").text( $( "#timerProgressBar").progressbar( "option","value" ) + "%" );
-}*/
 
 function start() {
 
@@ -142,6 +137,7 @@ function start() {
         saveLap(timeStringToSeconds($('#time').text()), '#startButton');
 
         stop();
+        document.title = "Stopped";
     }
     var newVal = button.innerHTML == "Start" ? "Stop" : "Start";
     button.innerHTML = newVal;
@@ -154,7 +150,7 @@ function saveLap(value, jqueryPressedElement, callback, isManual) {
         var TestObject = Parse.Object.extend("Laps");
         var testObject = new TestObject();
         isManual = isManual ? isManual : false;
-        testObject.save({length: value, date: getShortDate(), isManualLap: isManual}).then(function () {
+        testObject.save({length: value, date: getShortDate(), isManualLap: isManual,project:currentProject}).then(function () {
             toggleLoading(jqueryPressedElement);
             updateAllObjects();
             if (callback) {
@@ -174,7 +170,7 @@ function updateAllObjects() {
             $("#center_section").slideDown();
         }
     })
-    chart();
+    renderCharts();
 }
 
 /*
@@ -273,10 +269,6 @@ function initParse() {
     }
 }
 
-function test(string) {
-    document.getElementById('todayDate').innerHTML += ";" + string;
-}
-
 function findFirstDateInTheWeek(date) {
 
     date = new Date(date);
@@ -308,9 +300,7 @@ function show() {
 
 
     initParse();
-    chart();
-    $('.modal').show();
-    initDailyProgress();
+
 
     time = document.getElementById('time');
 
@@ -323,24 +313,9 @@ function show() {
     time.innerHTML = formatTime(x.time()); // set the timer initial time
 
 
-    updateAllObjects();
+    /*updateAllObjects();*/
 }
 
-function initDailyProgress() {
-
-    var Laps = Parse.Object.extend("Laps");
-    var query = new Parse.Query(Laps);
-    query.equalTo("date", getShortDate());
-    query.find().then(function (results) {
-        var totalLength = 0;
-        for (var i = 0; i < results.length; i++) {
-            var object = results[i];
-            totalLength += parseInt(object.get('length'));
-        }
-
-        //currentDailyProgress = parseInt(totalLength);
-    });
-}
 
 /*
  ================
@@ -503,7 +478,9 @@ function isGoalSet(date, type) {
     var query = new Parse.Query(parseGoal);
     query.equalTo("date", date);
     query.equalTo("type", type);
+    query.equalTo("project",currentProject)
     query.first().then(function (result) {
+
         promise.resolve(result);
     });
     return promise.promise();
@@ -526,7 +503,7 @@ function setGoal(date, type, length) {
             parseGoalRecord.set("goal", length);
             parseGoalRecord.set("type", type);
         }
-
+        parseGoalRecord.set("project",currentProject);
         parseGoalRecord.save().then(function () {
             promise.resolve();
             updateAllObjects();
@@ -544,7 +521,7 @@ function setGoal(date, type, length) {
  */
 
 function setDailyGoal() {
-    var goal = timeStringToSeconds($("#goalTime_day").text());
+    var goal = timeStringToSeconds($("#goal_time_to_set_day").text());
     var date = getShortDate();
     setGoal(date, DAILY_GOAL_TYPE, goal).then(function () {
         $("#setDailyGoalSection").hide();
@@ -553,7 +530,7 @@ function setDailyGoal() {
 
 function isDailyGoalSet(date) {
     var promise = $.Deferred();
-    date = date ? date: getShortDate();
+    date = date ? date : getShortDate();
 
     isGoalSet(date, DAILY_GOAL_TYPE).then(function (value) {
         promise.resolve(value);
@@ -562,6 +539,8 @@ function isDailyGoalSet(date) {
         }
         else {
             $("#goalTime_day").text(getGoalTime(value.get("goal")));
+            $("#goal_time_to_set_day").text(getGoalTime(value.get("goal")));
+            $("#dailyGoalSlider").slider("value", value.get("goal"));
         }
     });
 
@@ -574,7 +553,7 @@ function isDailyGoalSet(date) {
  ================
  */
 function setWeeklyGoal() {
-    var goal = timeStringToSeconds($("#goalTime_week").text());
+    var goal = timeStringToSeconds($("#goal_time_to_set_week").text());
     var date = getShortDate(findFirstDateInTheWeek(getShortDate()));
     setGoal(date, WEEKLY_GOAL_TYPE, goal).then(function () {
         $("#setWeeklyGoalSection").hide();
@@ -592,6 +571,8 @@ function isWeeklyGoalSet() {
         }
         else {
             $("#goalTime_week").text(getGoalTime(value.get("goal")));
+            $("#goal_time_to_set_week").text(getGoalTime(value.get("goal")));
+            $("#weeklyGoalSlider").slider("value", value.get("goal"));
         }
     }));
 
@@ -604,7 +585,7 @@ function isWeeklyGoalSet() {
  ================
  */
 function setMonthlyGoal() {
-    var goal = timeStringToSeconds($("#goalTime_month").text());
+    var goal = timeStringToSeconds($("#goal_time_to_set_month").text());
     var date = getShortDate(findFirstDateInMonth(getShortDate()));
     setGoal(date, MONTHLY_GOAL_TYPE, goal).then(function () {
         $("#setMonthlyGoalSection").hide();
@@ -622,6 +603,8 @@ function isMonthlyGoalSet() {
         }
         else {
             $("#goalTime_month").text(getGoalTime(value.get("goal")));
+            $("#goal_time_to_set_month").text(getGoalTime(value.get("goal")));
+            $("#monthlyGoalSlider").slider("value", value.get("goal"));
         }
     }));
 
@@ -639,15 +622,6 @@ function displayOtherTextBox() {
     document.getElementById("otherTextBox").style.display = "inline";
 }
 
-function testButton() {
-    var Laps = Parse.Object.extend("Laps");
-    var query = new Parse.Query(Laps);
-    query.equalTo("date", "12/16/2013");
-    query.descending("createdAt");
-    query.first().then(function (object) {
-        console.log(object.createdAt);
-    });
-}
 
 function getTotalLapLengthByDate(startDate, endDate) {
 
@@ -666,6 +640,7 @@ function getTotalLapLengthByDate(startDate, endDate) {
     //alert("start: " + startDate + "; end: " + endDate);
     query.greaterThanOrEqualTo("createdAt", startDate);
     query.lessThanOrEqualTo("createdAt", endDate);
+    query.equalTo("project",currentProject);
     query.limit(1000);
 
     query.find().then(function (results) {
@@ -740,9 +715,6 @@ function updateDashboard() {
     });
 }
 
-function updateDashboardCallback(length) {
-
-}
 
 /*
  *  ----------------
@@ -793,17 +765,122 @@ $(document).ready(function () {
         $(this).addClass('day_week_month_button_selected');
 
         var id = $(this)[0].id
-        id = id.replace("_button","");
+        id = id.replace("_button", "");
         id = "#" + id;
         $(id).siblings().hide();
         $(id).show();
     });
 
-    $("#goals_icon").click(function(){
+    $("#goals_icon").click(function () {
         $("#set_goals_container").slideToggle();
-       // $(this).css('background-image',"images/goal_hover.png");
+    });
+    $("#settings_icon").click(function () {
+        $("#settings_container").slideToggle();
+    });
+
+    $('#setting_show_breaks_on_graphs').click(function () {
+        setting_show_breaks_on_graphs = $(this).is(':checked');
+    });
+
+    $('#login_button').click(function () {
+
+        toggleLoading($(this));
+        var User = Parse.Object.extend("User");
+
+        var query = new Parse.Query(User);
+        query.equalTo("username", $('#username_input').val());
+        query.first().then(function (result) {
+            if (result == undefined) {
+                $('#login_button').hide();
+                toggleLoading($('#login_button'));
+                $('#user_signup').slideDown();
+            }
+            else {
+                Parse.User.logIn($('#username_input').val(), "password").then(function () {
+                    toggleLoading($('#login_button'));
+                    $('#user_login_container').hide();
+                    $('#projects_container').fadeIn(1000);
+                    loadProjects();
+                });
+            }
+        });
+    });
+
+    $('#username_input').keypress(function () {
+        $('#user_signup').slideUp();
+        $('#login_button').show();
+    });
+
+    $('#user_signup_button').click(function () {
+        var user = new Parse.User();
+        user.set("username", $('#username_input').val());
+        user.set("password", "password");
+        user.set("email", $('#username_input').val() + "@" + $('#username_input').val() + ".com");
+
+        user.signUp(null, {
+            success: function (user) {
+                alert("sign up successful");
+            },
+            error: function (user, error) {
+                // Show the error message somewhere and let the user try again.
+                alert("Error: " + error.code + " " + error.message);
+            }
+        });
+    });
+
+    $("#projects_container").on('click','.project',function () {
+        var Project = Parse.Object.extend("Projects");
+        currentProject = new Project();
+        currentProject.id=$(this).attr("parseid");
+        currentProjectTitle = $(this).text();
+
+        $('#projects_container').hide();
+        $('#project_title').text(currentProjectTitle);
+        loadApplication();
+    });
+
+    $('#show_new_project_details_button').click(function(){
+       $('#new_project_details').slideDown();
+    });
+
+    $('#add_project_button').click(function(){
+        var Project = Parse.Object.extend("Projects");
+        var newProject = new Project();
+        newProject.save({title:$('#project_title_input').val(),user:Parse.User.current()}).then(function (object) {
+            addProject(object);
+            $('#new_project_details').slideUp();
+            $('#project_title_input').val("");
+        });
     });
 });
+
+function loadProjects() {
+    var Projects = Parse.Object.extend("Projects");
+    var query = new Parse.Query(Projects);
+    var username = Parse.User.current().get("username");
+    /*$('#projects_list').text("");*/
+    query.equalTo("user", Parse.User.current());
+    query.find().then(function (results) {
+        var name = "";
+        for (var i = 0; i < results.length; i++) {
+            var object = results[i];
+            addProject(object);
+
+        }
+    });
+}
+
+function addProject(parseObject){
+    var element = "<div class='project' parseid='" + parseObject.id + "'>" + parseObject.get("title") + "</div>";
+    $('#projects_list').append(element);
+}
+
+
+function loadApplication() {
+    $('#application').fadeIn(1000);
+    updateAllObjects();
+}
+
 
 function toggleLoading(jqueryElementName) {
 
@@ -839,7 +916,7 @@ $(function () {
         max: 10 * HOUR,
         step: 0.5 * HOUR,
         change: function (event, ui) {
-            $('#goalTime_day').text(getGoalTime(ui.value));
+            $('#goal_time_to_set_day').text(getGoalTime(ui.value));
         }
     });
 
@@ -847,7 +924,7 @@ $(function () {
         max: 30 * HOUR,
         step: 1 * HOUR,
         change: function (event, ui) {
-            $('#goalTime_week').text(getGoalTime(ui.value));
+            $('#goal_time_to_set_week').text(getGoalTime(ui.value));
         }
     });
 
@@ -855,7 +932,7 @@ $(function () {
         max: 95 * HOUR,
         step: 5 * HOUR,
         change: function (event, ui) {
-            $('#goalTime_month').text(getGoalTime(ui.value));
+            $('#goal_time_to_set_month').text(getGoalTime(ui.value));
         }
     });
 
@@ -887,11 +964,22 @@ $(function () {
 
 /* Chart */
 
-function getLaps(date) {
+function getLaps(startDate, endDate) {
     var promise = $.Deferred();
     var Laps = Parse.Object.extend("Laps");
     var query = new Parse.Query(Laps);
-    query.equalTo("date", date);
+
+    if (endDate === undefined || endDate === startDate) {
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 1);
+    }
+
+
+    query.greaterThanOrEqualTo("createdAt", new Date(startDate));
+    query.lessThanOrEqualTo("createdAt", new Date(endDate));
+    query.limit(1000);
+    query.equalTo("project",currentProject);
+    //query.equalTo("date", "01/12/2014");
     query.notEqualTo("isManualLap", true);
     query.ascending("createdAt");
     query.find().then(function (results) {
@@ -900,12 +988,19 @@ function getLaps(date) {
     return promise.promise();
 }
 
-function findFirstLap(date) {
+function findFirstLap(startDate, endDate) {
     var promise = $.Deferred();
     var Laps = Parse.Object.extend("Laps");
     var query = new Parse.Query(Laps);
-    query.equalTo("date", date);
+    if (endDate === undefined || endDate === startDate) {
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 1);
+    }
+    query.greaterThanOrEqualTo("createdAt", new Date(startDate));
+    query.lessThanOrEqualTo("createdAt", new Date(endDate));
+    query.limit(1000);
     query.notEqualTo("isManualLap", true);
+    query.equalTo("project",currentProject);
     query.ascending("createdAt");
     query.first().then(function (result) {
         var val = result ? (result.createdAt - (result.get("length") * MILLISECONDS)) : undefined;
@@ -915,13 +1010,21 @@ function findFirstLap(date) {
     return promise.promise();
 }
 
-function getManualLapTotalLength(date) {
+function getManualLapTotalLength(startDate, endDate) {
     var promise = $.Deferred();
     var Laps = Parse.Object.extend("Laps");
     var query = new Parse.Query(Laps);
     var val = 0;
-    query.equalTo("date", date);
+    if (endDate === undefined || endDate === startDate) {
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 1);
+    }
+
+    query.greaterThanOrEqualTo("createdAt", new Date(startDate));
+    query.lessThanOrEqualTo("createdAt", new Date(endDate));
+    query.limit(1000);
     query.equalTo("isManualLap", true);
+    query.equalTo("project",currentProject);
     query.find().then(function (results) {
         if (results) {
             for (var i = 0; i < results.length; i++) {
@@ -934,8 +1037,21 @@ function getManualLapTotalLength(date) {
     return promise.promise();
 }
 
-function chart(date) {
+function renderCharts() {
+    /*dailyChart().then(function () {
+     weeklyChart().then(function(){
+     monthlyChart();
+     });
+     });*/
 
+    dailyChart();
+    weeklyChart();
+    monthlyChart();
+}
+
+function dailyChart(date) {
+
+    var promise = $.Deferred();
     var dps = [];
     var manualDps = [];
     var goalDps = [];
@@ -945,14 +1061,12 @@ function chart(date) {
 
     var dateToCheck = date ? date : getShortDate();
 
-    toggleLoading("#chart");
-
 
     // TODO: handle a case when there's no first lap!!!
     findFirstLap(dateToCheck)  // Get the first lap (use it as the manual lap start time)
         .then(function (result) {
             if (result) {
-                firstLap = result
+                firstLap = result;
             }
             ;
         })
@@ -985,13 +1099,15 @@ function chart(date) {
                 length = Math.ceil(length * 1000) / 1000;
                 dps.push({x: lapEnd, y: length, markerType: "none"});
 
-                if ((lapStart - prevLapEnd) > (1000 * 600)) {
-                    dps[dps.length - 3].indexLabel = "SB";
-                    dps[dps.length - 3].markerColor = "red";
-                    dps[dps.length - 3].markerType = "circle";
-                    dps[dps.length - 2].indexLabel = "EB";
-                    dps[dps.length - 2].markerColor = "red";
-                    dps[dps.length - 2].markerType = "circle";
+                if (setting_show_breaks_on_graphs == true) {
+                    if (((lapStart - prevLapEnd) > (1000 * 300))) {
+                        dps[dps.length - 3].indexLabel = "SB";
+                        dps[dps.length - 3].markerColor = "red";
+                        dps[dps.length - 3].markerType = "circle";
+                        dps[dps.length - 2].indexLabel = "EB";
+                        dps[dps.length - 2].markerColor = "red";
+                        dps[dps.length - 2].markerType = "circle";
+                    }
                 }
                 var prevLapEnd = lapEnd;
             }
@@ -1001,9 +1117,11 @@ function chart(date) {
                 b = new Date(b.x);
                 return a > b ? -1 : a < b ? 1 : 0;
             });
-        }).then(function(){return isDailyGoalSet(dateToCheck)})
+        }).then(function () {
+            return isDailyGoalSet(dateToCheck)
+        })
         .then(function (value) {
-            if (dps.length>0 && value) {
+            if (dps.length > 0 && value) {
                 var goal = value.get("goal") / 3600;
                 goalDps.push({x: dps[0].x, y: goal});
                 goalDps.push({x: dps[dps.length - 1].x, y: goal});
@@ -1011,11 +1129,12 @@ function chart(date) {
         })
         .then(function () {
 
-            var chartx = new CanvasJS.Chart("chartContainer",
+            var chart = new CanvasJS.Chart("chart_today",
                 {
                     backgroundColor: "#f8f8f8",
                     zoomEnabled: true,
-
+                    height: 290,
+                    width: 650,
                     title: {
                     },
                     axisX: {
@@ -1030,17 +1149,281 @@ function chart(date) {
                     data: [
                         {
                             type: "line",
-
+                            color: "#ea3955",
                             dataPoints: dps
                         },
                         {
                             type: "line",
-                            color: "yellow",
+                            color: "#EAB608",
                             dataPoints: manualDps
                         },
                         {
                             type: "line",
-                            color: "green",
+                            color: "#00CE72",
+                            dataPoints: goalDps
+                        }
+                    ]
+                });
+
+
+            chart.render();
+            promise.resolve();
+        }
+    );
+
+    return promise.promise();
+}
+
+function weeklyChart(date) {
+
+    var dps = [];
+    var manualDps = [];
+    var goalDps = [];
+    var firstLap;
+    var manualLapCount = 0;
+    var length = 0;
+    var promise = $.Deferred();
+
+    var dateToCheck = date ? date : getShortDate();
+
+    var start = findFirstDateInTheWeek(dateToCheck);
+    var end = new Date();
+
+    end.setDate(start.getDate() + 6);
+
+    // TODO: handle a case when there's no first lap!!!
+    findFirstLap(start, end)  // Get the first lap (use it as the manual lap start time)
+        .then(function (result) {
+            if (result) {
+                firstLap = result;
+            }
+            ;
+        })
+        .then(function () {
+            return getManualLapTotalLength(start, end);  // Get total manual lap time
+        })
+        .then(function (result) {
+            manualLapCount = result;
+            if (manualLapCount > 0) {
+                length = manualLapCount;
+                if (firstLap) {
+                    manualDps.push({x: firstLap, y: 0, markerColor: "yellow"});
+                    manualDps.push({x: firstLap, y: manualLapCount, markerColor: "yellow", indexLabel: "M"});
+                }
+            }
+        })
+        .then(function () {
+            return getLaps(start, end);
+        })
+        .then(function (results) {
+            for (var i = 0; i < results.length; i++) {
+                var object = results[i];
+                var lapEnd = object.createdAt;
+                var lapStart = new Date(lapEnd - (object.get("length") * 1000));
+
+                var dp = {x: lapStart, y: length, markerType: "none"};
+
+                // todo: consolidate points
+
+                dps.push(dp);
+                length += ((lapEnd - lapStart) / 1000 / 3600);
+                length = Math.ceil(length * 1000) / 1000;
+                dps.push({x: lapEnd, y: length, markerType: "none"});
+
+                if (setting_show_breaks_on_graphs == true) {
+                    if (((lapStart - prevLapEnd) > (1000 * 300))) {
+                        dps[dps.length - 3].indexLabel = "SB";
+                        dps[dps.length - 3].markerColor = "red";
+                        dps[dps.length - 3].markerType = "circle";
+                        dps[dps.length - 2].indexLabel = "EB";
+                        dps[dps.length - 2].markerColor = "red";
+                        dps[dps.length - 2].markerType = "circle";
+                    }
+                }
+                var prevLapEnd = lapEnd;
+            }
+
+            dps.sort(function (a, b) {
+                a = new Date(a.x);
+                b = new Date(b.x);
+                return a > b ? -1 : a < b ? 1 : 0;
+            });
+        }).then(function () {
+            return isWeeklyGoalSet(start)
+        })
+        .then(function (value) {
+            if (dps.length > 0 && value) {
+                var goal = value.get("goal") / 3600;
+                goalDps.push({x: dps[0].x, y: goal});
+                goalDps.push({x: dps[dps.length - 1].x, y: goal});
+            }
+        })
+        .then(function () {
+
+            var chartx = new CanvasJS.Chart("chart_week",
+                {
+                    backgroundColor: "#f8f8f8",
+                    zoomEnabled: true,
+                    height: 290,
+                    width: 650,
+                    title: {
+                    },
+                    axisX: {
+                        valueFormatString: "DDD",
+                        interval: 1,
+                        intervalType: "day",
+                    },
+                    axisY: {
+                        includeZero: false,
+                        gridColor: "#f8f8f8",
+                        //valueFormatString: " "
+
+                    },
+                    data: [
+                        {
+                            type: "line",
+                            color: "#ea3955",
+                            dataPoints: dps
+                        },
+                        {
+                            type: "line",
+                            color: "#EAB608",
+                            dataPoints: manualDps
+                        },
+                        {
+                            type: "line",
+                            color: "#00CE72",
+                            dataPoints: goalDps
+                        }
+                    ]
+                });
+
+
+            chartx.render();
+            promise.resolve();
+        }
+    );
+    return promise.promise();
+}
+
+function monthlyChart(date) {
+
+    var dps = [];
+    var manualDps = [];
+    var goalDps = [];
+    var firstLap;
+    var manualLapCount = 0;
+    var length = 0;
+
+    var dateToCheck = date ? date : getShortDate();
+
+    var start = findFirstDateInMonth(dateToCheck);
+    var end = new Date();
+    end.setMonth(start.getMonth() + 1);
+    end.setDate(start.getDate() - 1);
+
+    // TODO: handle a case when there's no first lap!!!
+    findFirstLap(start, end)  // Get the first lap (use it as the manual lap start time)
+        .then(function (result) {
+            if (result) {
+                firstLap = result;
+            }
+            ;
+        })
+        .then(function () {
+            return getManualLapTotalLength(start, end);  // Get total manual lap time
+        })
+        .then(function (result) {
+            manualLapCount = result;
+            if (manualLapCount > 0) {
+                length = manualLapCount;
+                if (firstLap) {
+                    manualDps.push({x: firstLap, y: 0, markerColor: "yellow"});
+                    manualDps.push({x: firstLap, y: manualLapCount, markerColor: "yellow", indexLabel: "M"});
+                }
+            }
+        })
+        .then(function () {
+            return getLaps(start, end);
+        })
+        .then(function (results) {
+            for (var i = 0; i < results.length; i++) {
+                var object = results[i];
+                var lapEnd = object.createdAt;
+                var lapStart = new Date(lapEnd - (object.get("length") * 1000));
+
+                var dp = {x: lapStart, y: length, markerType: "none"};
+
+                // todo: consolidate points
+
+                dps.push(dp);
+                length += ((lapEnd - lapStart) / 1000 / 3600);
+                length = Math.ceil(length * 1000) / 1000;
+                dps.push({x: lapEnd, y: length, markerType: "none"});
+
+                if (setting_show_breaks_on_graphs == true) {
+                    if (((lapStart - prevLapEnd) > (1000 * 300))) {
+                        dps[dps.length - 3].indexLabel = "SB";
+                        dps[dps.length - 3].markerColor = "red";
+                        dps[dps.length - 3].markerType = "circle";
+                        dps[dps.length - 2].indexLabel = "EB";
+                        dps[dps.length - 2].markerColor = "red";
+                        dps[dps.length - 2].markerType = "circle";
+                    }
+                }
+                var prevLapEnd = lapEnd;
+            }
+
+            dps.sort(function (a, b) {
+                a = new Date(a.x);
+                b = new Date(b.x);
+                return a > b ? -1 : a < b ? 1 : 0;
+            });
+        }).then(function () {
+            return isMonthlyGoalSet(start)
+        })
+        .then(function (value) {
+            if (dps.length > 0 && value) {
+                var goal = value.get("goal") / 3600;
+                goalDps.push({x: dps[0].x, y: goal});
+                goalDps.push({x: dps[dps.length - 1].x, y: goal});
+            }
+        })
+        .then(function () {
+
+            var chartx = new CanvasJS.Chart("chart_month",
+                {
+                    backgroundColor: "#f8f8f8",
+                    zoomEnabled: true,
+                    height: 290,
+                    width: 650,
+                    title: {
+                    },
+                    axisX: {
+                        valueFormatString: "DD",
+                        interval: 1,
+                        intervalType: "day",
+                    },
+                    axisY: {
+                        includeZero: false,
+                        gridColor: "#f8f8f8",
+                        //valueFormatString: " "
+
+                    },
+                    data: [
+                        {
+                            type: "line",
+                            color: "#ea3955",
+                            dataPoints: dps
+                        },
+                        {
+                            type: "line",
+                            color: "#EAB608",
+                            dataPoints: manualDps
+                        },
+                        {
+                            type: "line",
+                            color: "#00CE72",
                             dataPoints: goalDps
                         }
                     ]
@@ -1049,9 +1432,6 @@ function chart(date) {
 
             chartx.render();
 
-            toggleLoading("#chart");
-
         }
     );
 }
-

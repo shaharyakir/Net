@@ -1,111 +1,68 @@
-<div id="dashboard" class="section">
+<html>
+<head>
 
-    <ul>
+</head>
+<script src="parse-1.2.13.js"></script>
+<script src="jquery-ui-1.10.3.custom/js/jquery-1.9.1.js"></script>
+<script src="jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.js"></script>
+<script src="canvasjs.min.js"></script>
+<link href="jquery-ui-1.10.3.custom/css/ui-lightness/jquery-ui-1.10.3.custom.css" rel="stylesheet">
+<link rel="stylesheet" href="jquery-ui-1.10.3.custom/development-bundle/demos/demos.css">
+<link href='http://fonts.googleapis.com/css?family=Exo+2' rel='stylesheet' type='text/css'>
+<script>
+    Parse.initialize("75yStvvNmep3ZhsC5VAtMBSUGjoECMmmNI7aHxTK", "BZxsbuz6tYffL4Ld09pO5tswvBVrvVLoROezGlpR");
 
-        <li class="dashboard_box" id="dashboard_today">
-            <div class="dashboard_title">Today</div>
-            <div class="dashboard_content">
+    /*
+     *
+     * MY PROJECT
+     *
+     * */
+    /*var user = new Parse.User();
+    user.set("username", "my name");
+    user.set("password", "my pass");
+    user.set("email", "email@example.com");
 
-                <ul>
-                    <li class="goalPercentage">
-                        Completed
-                        <span class="goalTime" id="daily_goal_percentage"></span>
-                    </li>
+    // other fields can be set just like with Parse.Object
+    user.set("phone", "415-392-0202");
 
-                    <li>
-                        <span class="dashboard_time_large" id="dashboard_today_hours">00</span>
-                        <span class="dashboard_caption_large">hours</span>
-                    </li>
-                    <li>
-                        <span class="dashboard_time_small" id="dashboard_today_minutes">00</span>
-                        </br>
-                        <span class="dashboard_caption_small">minutes</span>
-                    </li>
+    user.signUp(null, {
+        success: function(user) {
+            // Hooray! Let them use the app now.
+            alert(user);
+        },
+        error: function(user, error) {
+            // Show the error message somewhere and let the user try again.
+            alert("Error: " + error.code + " " + error.message);
+        }
+    });*/
+    var currUser;
+    Parse.User.logIn("test","my pass").then(function(user){
+        currUser=user;
+        var Projects = Parse.Object.extend("Projects");
+        var query = new Parse.Query(Projects);
+        query.equalTo("user",currUser);
+        query.find().then(function (results) {
+            var name="";
+            for (var i = 0; i < results.length; i++) {
+                var object = results[i];
+                name = name +  object.get("title") + "; ";
+            }
+//        alert(results[0].get("title"));
+            /*var relation = results[0].relation("user");
+            relation.add(currUser)
+            results[0].save();*/
 
-                    <li class="goal" id="daily_goal">
-                        <span>Goal</span>
-                        <span class="goalTime" id="goalTime_day">00:00</span>
-<span id="setDailyGoalSection" style="display:none">
-<span id="dailyGoalSlider"
-      class="slider goalSlider"></span>
-<span id="setDailyGoalButton" class="smallGrayButton setGoalButton">Set</span>
-</span>
-                        <span style="margin-left: 10px">Left</span>
-                        <span class="goalTime" id="goalTime_day_left">00:00</span>
-                        <br/>
-                        <span style="margin-left: 10px">Best Possible Time</span>
-                        <span class="goalTime" id="goalTime_day_best_time">00:00</span>
-                    </li>
-                </ul>
-
-            </div>
-        </li>
-
-        <li class="dashboard_box" id="dashboard_week">
-            <div class="dashboard_title">This Week</div>
-            <div class="dashboard_content">
-
-                <ul>
-                    <li class="goalPercentage">
-                        Completed
-                        <span class="goalTime" id="weekly_goal_percentage"></span>
-                    </li>
-                    <li>
-                        <span class="dashboard_time_large" id="dashboard_week_hours">00</span>
-                        <span class="dashboard_caption_large">hours</span>
-                    </li>
-                    <li>
-                        <span class="dashboard_time_small " id="dashboard_week_minutes">00</span>
-                        </br>
-                        <span class="dashboard_caption_small">minutes</span>
-                    </li>
-                    <li class="goal" id="weekly_goal">
-                        Goal
-                        <span class="goalTime" id="goalTime_week">00:00</span>
-<span id="setWeeklyGoalSection" style="display:none">
-<span id="weeklyGoalSlider"
-      class="slider goalSlider"></span>
-<span id="setWeeklyGoalButton" class="smallGrayButton setGoalButton">Set</span>
-</span>
-                    </li>
-                </ul>
+            /*results[0].set("user",currUser);
+            results[0].save();*/
+            $('#my_projects').text(name);
+        });
+    });
 
 
-            </div>
-        </li>
-        <li class="dashboard_box" id="dashboard_month">
-            <div class="dashboard_title">This Month</div>
-            <div class="dashboard_content">
+</script>
+<body>
+<div id="my_projects" style="font-size: 26px">
 
-                <ul>
-                    <li class="goalPercentage">
-                        Completed
-                        <span class="goalTime" id="monthly_goal_percentage"></span>
-                    </li>
-                    <li>
-                        <span class="dashboard_time_large" id="dashboard_month_hours">00</span>
-                        <span class="dashboard_caption_large">hours</span>
-                    </li>
-                    <li>
-                        <span class="dashboard_time_small" id="dashboard_month_minutes">00</span>
-                        </br>
-                        <span class="dashboard_caption_small">minutes</span>
-                    </li>
-
-                    <li class="goal" id="monthly_goal">
-                        Goal
-                        <span class="goalTime" id="goalTime_month">00:00</span>
-<span id="setMonthlyGoalSection" style="display:none">
-<span id="monthlyGoalSlider"
-      class="slider goalSlider"></span>
-<span id="setMonthlyGoalButton" class="smallGrayButton setGoalButton">Set</span>
-</span>
-                    </li>
-
-                </ul>
-
-            </div>
-        </li>
-
-    </ul>
 </div>
+</body>
+</html>

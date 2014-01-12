@@ -246,9 +246,9 @@ ul {
     position: absolute;
     bottom: 5%;
     text-align: center;
-    left:auto;
-    right:auto;
+
 }
+
 
 
 /* Dashboard OLD */
@@ -327,14 +327,13 @@ ul {
 
 /* */
 
-.goal {
+.panel {
     padding-top: 8px;
     margin-top: 8px;
     color: darkgray;
     width: 20%;
     height:200px;
     position: absolute;
-    top:17%;
     z-index: 10;
     box-shadow: 2px 2px 12px #888;
     background-color: white;
@@ -442,3 +441,13 @@ Chart
 
 }
 
+
+/* Projects */
+.project{
+    font-size:24px;
+    padding:8px;
+}
+.project:hover{
+    background-color: darkgray;
+
+}
