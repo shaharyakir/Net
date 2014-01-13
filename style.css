@@ -460,3 +460,7 @@ Chart
     background-color: darkgray;
 
 }
+
+#user_log_out_button:hover{
+    color: #ea3955;
+}

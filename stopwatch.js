@@ -111,7 +111,7 @@ function stop() {
 
     clearInterval(clocktimer);
 
-    eraseCookie(COOKIE_CURRENT_LAP);
+    cookieHandlerInstance.eraseCookie(COOKIE_CURRENT_LAP);
 
     reset();
 
@@ -641,7 +641,7 @@ function getTotalLapLengthByDate(startDate, endDate) {
     var query = new Parse.Query(Laps);
     //query.equalTo("date", startDate);
 
-    //alert("start: " + startDate + "; end: " + endDate);
+
     query.greaterThanOrEqualTo("createdAt", startDate);
     query.lessThanOrEqualTo("createdAt", endDate);
     query.equalTo("project", currentProject);
@@ -650,12 +650,12 @@ function getTotalLapLengthByDate(startDate, endDate) {
     query.find().then(function (results) {
         var totalLength = 0;
 
-        //alert (results.length);
+
         for (var i = 0; i < results.length; i++) {
             var object = results[i];
             totalLength += parseInt(object.get('length'));
         }
-        //alert("startDate: " + startDate + "totalLength: " + totalLength);
+
         promise.resolve(totalLength);
     });
 
@@ -795,16 +795,28 @@ $(document).ready(function () {
         $('#user_log_out_panel').hide();
         Parse.User.logOut();
         $('#projects_list').text("");
+        cookieHandlerInstance.eraseCookie(COOKIE_CURRENT_PROJECT);
+        cookieHandlerInstance.eraseCookie(COOKIE_CURRENT_PROJECT_TITLE);
         $('#application').hide();
         $('#user_login_container').fadeIn(1000);
+
     });
 
     $('#user_icon').mouseenter(function () {
         $('#user_log_out_panel').slideDown();
-    });
+    })
 
-    $('#user_log_out_panel').mouseleave(function(){
-        $('#user_log_out_panel').slideUp();
+    $('#user_icon').mouseleave(function () {
+        $('#user_log_out_panel').delay(1000).slideUp();
+    })
+
+    $('#user_log_out_panel').mouseenter(function(){
+        $(this).stop(true);
+        $(this).slideDown();
+    })
+    $('#user_log_out_panel').mouseleave(
+        function(){
+        $('#user_log_out_panel').delay(1000).slideUp();
     });
 
     $('#login_button').click(function () {
@@ -842,7 +854,9 @@ $(document).ready(function () {
 
         user.signUp(null, {
             success: function (user) {
-                alert("sign up successful");
+                $('#user_signup').hide();
+                $('#login_button').show();
+                onUserLogin();
             },
             error: function (user, error) {
                 // Show the error message somewhere and let the user try again.
@@ -912,7 +926,8 @@ function onUserLogin(){
 
     var projectIdFromCookie = cookieHandlerInstance.readCookie(COOKIE_CURRENT_PROJECT);
     var projectTitleFromCookie = cookieHandlerInstance.readCookie(COOKIE_CURRENT_PROJECT_TITLE);
-    if ((projectIdFromCookie != null && (projectTitleFromCookie !=null))){
+    var isProjectCached = ((projectIdFromCookie != "") && (projectTitleFromCookie !="") && (projectIdFromCookie!=null) && (projectTitleFromCookie!=null));
+    if (isProjectCached == true){
         projectTitleFromCookie = decodeURI(projectTitleFromCookie);
         onProjectLoad(projectIdFromCookie,projectTitleFromCookie);
     }
@@ -1184,6 +1199,8 @@ function dailyChart(date) {
                     },
                     axisX: {
                         valueFormatString: "HH:mm",
+                       /* interval:1,
+                        intervalType:"hour"*/
                     },
                     axisY: {
                         includeZero: false,
