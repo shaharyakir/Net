@@ -1,13 +1,13 @@
 /* General */
-.clear{
-    clear:both;
+.clear {
+    clear: both;
 }
 
 body {
     background: #f4f8fc;
 
     color: #57676e;
-    font-family: 'Exo 2','Helvetica';
+    font-family: 'Exo 2', 'Helvetica';
     /*font-family: 'Exo 2', 'Myriad', 'Lucida Sans Unicode', 'OpenSans', sans-serif;*/
     -webkit-text-stroke: 1px rgba(0, 0, 0, 0.1);
     -webkit-font-smoothing: antialiased;
@@ -58,7 +58,7 @@ ul {
 .timerDiv {
 
     cursor: default;
-    margin-top:8px;
+    margin-top: 8px;
     margin-left: auto;
     margin-right: auto;
     padding: 2px 8px 2px 8px;
@@ -70,6 +70,14 @@ ul {
 
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0), 0 0 10px rgba(0, 0, 0, 0.1);
     border: 1px solid #C3CCD0;
+}
+
+#time{
+
+    min-width: 208px;
+    text-align: start;
+    display: inline-block;
+
 }
 
 #innerBox {
@@ -161,6 +169,8 @@ ul {
     cursor: pointer;
 }
 
+
+
 #this_week_table {
     width: 66%;
     border-collapse: collapse;
@@ -229,27 +239,25 @@ ul {
     margin-bottom: 20px;
 }
 
-.dashboard_details{
+.dashboard_details {
     margin-top: 12px;
 }
 
-.dashboard_details_data{
+.dashboard_details_data {
     float: right;
 }
 
-.dashboard_details_title{
+.dashboard_details_title {
     color: darkgray;
     font-weight: bold;
 }
 
-.day_week_month_buttons_container{
+.day_week_month_buttons_container {
     position: absolute;
     bottom: 5%;
     text-align: center;
 
 }
-
-
 
 /* Dashboard OLD */
 
@@ -332,13 +340,12 @@ ul {
     margin-top: 8px;
     color: darkgray;
     width: 20%;
-    height:200px;
+    height: 200px;
     position: absolute;
     z-index: 10;
     box-shadow: 2px 2px 12px #888;
     background-color: white;
 }
-
 
 .goalPercentage {
     padding-bottom: 8px;
@@ -350,8 +357,8 @@ ul {
 
 }
 
-.goal_container{
-    margin-top:24px;
+.goal_container {
+    margin-top: 24px;
     font-size: 18px;
 }
 
@@ -367,6 +374,19 @@ ul {
 Chart
 */
 
+.chart{
+    /*text-align: center;*/
+    vertical-align: middle;
+}
+
+.date{
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
 
 #datepicker {
     background-color: inherit;
@@ -403,13 +423,13 @@ Chart
     border: 1px solid #E7E7E7;
 }
 
-.setGoalButton{
-    float:right;
+.setGoalButton {
+    float: right;
 }
 
 /* Images */
-.icon{
-    width:24px;
+.icon {
+    width: 24px;
     height: 24px;
     margin-right: 4px;
     display: inline-block;
@@ -417,50 +437,132 @@ Chart
 
 #settings_icon {
     background-position: center;
-    background-image:url('images/settings.png');
+    background-image: url('images/settings.png');
     background-size: contain;
 }
+
 #settings_icon:hover {
     background-image: url('images/settings_hover.png');
 }
+
 #goals_icon {
     background-position: center;
-    background-image:url('images/goal.png');
+    background-image: url('images/goal.png');
     background-size: contain;
 }
+
 #goals_icon:hover {
     background-image: url('images/goal_hover.png');
 }
 
 #user_icon {
     background-position: center;
-    background-image:url('images/user.png');
+    background-image: url('images/user.png');
     background-size: contain;
 }
+
 #user_icon:hover {
     background-image: url('images/user_hover.png');
 }
 
-#settings_panel{
+.back_icon {
+    background-position: center;
+    background-image: url('images/back.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.back_icon:hover {
+    background-image: url('images/back_hover.png');
+}
+
+.forward_icon {
+    background-position: center;
+    background-image: url('images/forward.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.forward_icon:hover {
+    background-image: url('images/forward_hover.png');
+}
+
+.overlay {
+    background: darkgray;
+    opacity: 0.3;
+    position: absolute;
+    left: 0;
+    top:0;
+    border-radius: 6px;
+    height: 100%;
+    width: 100%;
+    z-index: 10;
+}
+
+#log_overlay{
+    display: inline;
+}
+
+.delete_icon {
+    background-position: center;
+    background-image: url('images/delete.png');
+    background-size: contain;
+    float: right;
+    /*display:none;*/
+}
+
+.delete_icon:hover {
+    background-image: url('images/delete_hover.png');
+}
+
+#logo_icon {
+    background-position: center;
+    background-image: url('images/logo.png');
+    background-size: contain;
+}
+
+#settings_panel {
     box-shadow: 0 1px 2px -2px gray;
     margin-bottom: 12px
 }
 
-#set_goals_container{
+#set_goals_container {
 
 }
-
 
 /* Projects */
-.project{
-    font-size:24px;
-    padding:8px;
+.project {
+    font-size: 24px;
+    padding: 8px;
 }
-.project:hover{
+
+.project:hover {
     background-color: darkgray;
-
 }
 
-#user_log_out_button:hover{
+#user_log_out_button:hover {
     color: #ea3955;
+}
+
+/* Log */
+#log_container{
+    min-height: 200px;
+}
+#log_container table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#log_container td {
+    text-align: left;
+    padding: 4px;
+    margin: 0;
+}
+
+#log_container tbody tr:hover {
+    background: #E8E8E8;
+}
+
+.log_entry_icon, .log_entry_time{
+    width: 5%;
 }

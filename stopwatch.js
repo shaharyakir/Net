@@ -6,12 +6,14 @@ var COOKIE_CURRENT_PROJECT = "currentProjectId";
 var COOKIE_CURRENT_PROJECT_TITLE = "currentProjectTitle";
 var HOUR = 3600;
 var MILLISECONDS = 1000;
-var UPDATE_INTERVAL = 500;
+var UPDATE_INTERVAL = 100;
+var CLICK_TIMEOUT = 500;
 //var currentGoalLength = 0;
 //var currentDailyProgress = 0;
 //var currentProjectId;
 var currentProject;
 var currentProjectTitle;
+var timeOut = 0;
 
 /* Settings*/
 var setting_show_breaks_on_graphs = false;
@@ -22,6 +24,13 @@ var setting_show_breaks_on_graphs = false;
 var WEEKLY_GOAL_TYPE = "WEEKLY";
 var MONTHLY_GOAL_TYPE = "MONTHLY";
 var DAILY_GOAL_TYPE = "DAILY";
+var STATE_ENABLED = 1;
+var STATE_DISABLED = 2;
+var ENTER_KEYCODE = 13;
+
+var LOG_ADD_ICON = 1;
+var LOG_BREAK_ICON = 2;
+var LOG_MISC_ICON = 3;
 
 // TODO: wrap in a cookie Handler object - when I learn OO!
 /*
@@ -29,27 +38,27 @@ var DAILY_GOAL_TYPE = "DAILY";
  Cookie functions
  ================
  */
-var cookieHandler = function(){
-this.createCookie = function (name, value) {
-    var exdays = 365;
-    var exdate = new Date();
-    exdate.setDate(exdate.getDate() + exdays);
-    value = escape(value) + ((exdays == null) ? "" : "; expires=" + exdate.toUTCString());
-    document.cookie = name + "=" + value;
-}
-this.readCookie = function (name) {
-    var nameEQ = name + "=";
-    var ca = document.cookie.split(';');
-    for (var i = 0; i < ca.length; i++) {
-        var c = ca[i];
-        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+var cookieHandler = function () {
+    this.createCookie = function (name, value) {
+        var exdays = 365;
+        var exdate = new Date();
+        exdate.setDate(exdate.getDate() + exdays);
+        value = escape(value) + ((exdays == null) ? "" : "; expires=" + exdate.toUTCString());
+        document.cookie = name + "=" + value;
     }
-    return null;
-};
-this.eraseCookie = function (name) {
-    this.createCookie(name, "", -1);
-};
+    this.readCookie = function (name) {
+        var nameEQ = name + "=";
+        var ca = document.cookie.split(';');
+        for (var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    };
+    this.eraseCookie = function (name) {
+        this.createCookie(name, "", -1);
+    };
 };
 
 /*
@@ -122,7 +131,7 @@ function reset() {
     update();
 }
 function update() {
-    time.innerHTML = formatTime(x.time());
+    $('#time').text(formatTime(x.time()));
     cookieHandlerInstance.createCookie(COOKIE_CURRENT_LAP, x.time());
     document.title = "(" + formatTime(x.time()) + ")" + " Running";
 
@@ -296,14 +305,29 @@ function findFirstDateInMonth(date) {
     return date;
 }
 
+function findLastDateInMonth(date) {
+    var first = findFirstDateInMonth(date);
+    var last = new Date();
+    last.setMonth(first.getMonth() + 1);
+    last.setDate(first.getDate() - 1);
+    last.setFullYear(first.getFullYear());
+    return last;
+}
+
+function findLastDateInWeek(date) {
+    date = new Date(date);
+    var last = findFirstDateInTheWeek(date);
+    last.setDate(date.getDate() + 6);
+    return last;
+}
+
+
 /*
  ================
  OnLoad
  ================
  */
 function show() {
-
-
 
 
     time = document.getElementById('time');
@@ -564,10 +588,10 @@ function setWeeklyGoal() {
     });
 }
 
-function isWeeklyGoalSet() {
+function isWeeklyGoalSet(date) {
     var promise = $.Deferred();
+    date = date ? getShortDate(date) : getShortDate(findFirstDateInTheWeek(getShortDate()));
 
-    var date = getShortDate(findFirstDateInTheWeek(getShortDate()));
     $.when(isGoalSet(date, WEEKLY_GOAL_TYPE).done(function (value) {
         promise.resolve(value);
         if (!value) {
@@ -596,10 +620,9 @@ function setMonthlyGoal() {
     });
 }
 
-function isMonthlyGoalSet() {
+function isMonthlyGoalSet(date) {
     var promise = $.Deferred();
-
-    var date = getShortDate(findFirstDateInMonth(getShortDate()));
+    date = date ? getShortDate(date) : getShortDate(findFirstDateInMonth(getShortDate()));
     $.when(isGoalSet(date, MONTHLY_GOAL_TYPE).done(function (value) {
         promise.resolve(value);
         if (!value) {
@@ -625,8 +648,6 @@ function displayOtherTextBox() {
     document.getElementById("stopReasonButtons").style.display = "none";
     document.getElementById("otherTextBox").style.display = "inline";
 }
-
-
 function getTotalLapLengthByDate(startDate, endDate) {
 
     var promise = $.Deferred();
@@ -680,12 +701,12 @@ function updateDashboard() {
     isDailyGoalSet().then(function () {
         toggleLoading('#dashboard_today_hours');
         getTotalLapLengthByDate(today, todayEnd).then(function (value) {
-            $("#dashboard_today_hours").text(secondsToString(value).split(":")[0]);
+            $("#dashboard_today_hours").text(Math.ceil((value / 3600) * 10) / 10);
             $("#dashboard_today_time").text(secondsToString(value));
             var dailyGoal = timeStringToSeconds($("#goalTime_day").text());
             var dailyGoalLeft = dailyGoal - value;
-            $("#daily_goal_percentage").text(dividedValueToPercentage(value / dailyGoal));
             $("#goalTime_day_left").text(secondsToString(dailyGoalLeft).substr(0, 5));
+            $("#daily_goal_percentage").text(dividedValueToPercentage(value / dailyGoal));
             var bestPossibleTime = new Date()
             bestPossibleTime.setTime((dailyGoalLeft * MILLISECONDS) + bestPossibleTime.getTime());
             bestPossibleTime = dateObjectToHHMM(bestPossibleTime);
@@ -698,10 +719,12 @@ function updateDashboard() {
     isWeeklyGoalSet().then(function () {
         toggleLoading('#dashboard_week_hours');
         getTotalLapLengthByDate(findFirstDateInTheWeek(today), todayEnd).then(function (value) {
-            $("#dashboard_week_hours").text(secondsToString(value).split(":")[0]);
+            $("#dashboard_week_hours").text(Math.ceil((value / 3600) * 10) / 10);
             $("#dashboard_week_time").text(secondsToString(value));
             var weeklyGoal = timeStringToSeconds($("#goalTime_week").text());
             $("#weekly_goal_percentage").text(dividedValueToPercentage(value / weeklyGoal));
+            var weeklyGoalLeft = weeklyGoal - value;
+            $("#goalTime_week_left").text(secondsToString(weeklyGoalLeft).substr(0, 5));
             toggleLoading('#dashboard_week_hours');
         });
     });
@@ -710,204 +733,54 @@ function updateDashboard() {
     isMonthlyGoalSet().then(function () {
         toggleLoading('#dashboard_month_hours');
         getTotalLapLengthByDate(findFirstDateInMonth(today), todayEnd).then(function (value) {
-            $("#dashboard_month_hours").text(secondsToString(value).split(":")[0]);
+            $("#dashboard_month_hours").text(Math.ceil((value / 3600) * 10) / 10);
             $("#dashboard_month_time").text(secondsToString(value));
             var monthlyGoal = timeStringToSeconds($("#goalTime_month").text());
             $("#monthly_goal_percentage").text(dividedValueToPercentage(value / monthlyGoal));
+            var monthlyGoalLeft = monthlyGoal - value;
+            $("#goalTime_month_left").text(secondsToString(monthlyGoalLeft).substr(0, 5));
             toggleLoading('#dashboard_month_hours');
         });
     });
 }
 
-
-/*
- *  ----------------
- *  jQuery Functions
- *  ----------------
- * */
-
-$(document).ready(function () {
-
-    initParse();
-
-    if (Parse.User.current() != null){
-        onUserLogin();
-    }
-
-    $("#updateDayGoal").click(function () {
-        $('#updateDayGoalDiv').slideToggle();
-        $(this).toggleClass("grayButton-sel").toggleClass('grayButton');
-    });
-
-    $('#addManualLap_Date').text(getShortDate());
-
-    $('#addManualLapButton').click(function () {
-        $('#addManualLapSection').slideToggle();
-        $(this).toggleClass("smallGrayButton-sel");
-    });
-
-    $('#addManualLap_Save').click(function () {
-        var manualLapLength = $('#manualLapSlider').slider("value");
-        //currentDailyProgress += manualLapLength;
-        saveLap(manualLapLength, this, function () {
-            $('#addManualLapButton').click()
-        }, true);
-    });
-
-    $('.expandCollapseTitle').click(function () {
-        $(this).next().slideToggle();
-    });
-
-    $(".goalTime").click(function () {
-        $(this).next().toggle();
-    });
-
-    // Calls the setGoal function (d/w/m) respectively by the calling element
-    $(".setGoalButton").click(function () {
-        var fn = $(this).attr('id');
-        fn = fn.replace('Button', '');
-        window[fn]();
-    });
-
-    $(".day_week_month_button").click(function () {
-        $(this).siblings().removeClass('day_week_month_button_selected');
-        $(this).addClass('day_week_month_button_selected');
-
-        var id = $(this)[0].id
-        id = id.replace("_button", "");
-        id = "#" + id;
-        $(id).siblings().hide();
-        $(id).show();
-    });
-
-    $("#goals_icon").click(function () {
-        $("#set_goals_container").slideToggle();
-    });
-    $("#settings_icon").click(function () {
-        $("#settings_container").slideToggle();
-    });
-
-    $('#setting_show_breaks_on_graphs').click(function () {
-        setting_show_breaks_on_graphs = $(this).is(':checked');
-    });
-
-    $('#user_log_out_button').click(function () {
-        $('#user_log_out_panel').hide();
-        Parse.User.logOut();
-        $('#projects_list').text("");
-        cookieHandlerInstance.eraseCookie(COOKIE_CURRENT_PROJECT);
-        cookieHandlerInstance.eraseCookie(COOKIE_CURRENT_PROJECT_TITLE);
-        $('#application').hide();
-        $('#user_login_container').fadeIn(1000);
-
-    });
-
-    $('#user_icon').mouseenter(function () {
-        $('#user_log_out_panel').slideDown();
-    })
-
-    $('#user_icon').mouseleave(function () {
-        $('#user_log_out_panel').delay(1000).slideUp();
-    })
-
-    $('#user_log_out_panel').mouseenter(function(){
-        $(this).stop(true);
-        $(this).slideDown();
-    })
-    $('#user_log_out_panel').mouseleave(
-        function(){
-        $('#user_log_out_panel').delay(1000).slideUp();
-    });
-
-    $('#login_button').click(function () {
-
-        toggleLoading($(this));
-        var User = Parse.Object.extend("User");
-
-        var query = new Parse.Query(User);
-        query.equalTo("username", $('#username_input').val());
-        query.first().then(function (result) {
-            if (result == undefined) {
-                $('#login_button').hide();
-                toggleLoading($('#login_button'));
-                $('#user_signup').slideDown();
-            }
-            else {
-                Parse.User.logIn($('#username_input').val(), "password").then(function () {
-                    toggleLoading($('#login_button'));
-                    onUserLogin();
-                });
-            }
-        });
-    });
-
-    $('#username_input').keypress(function () {
-        $('#user_signup').slideUp();
-        $('#login_button').show();
-    });
-
-    $('#user_signup_button').click(function () {
-        var user = new Parse.User();
-        user.set("username", $('#username_input').val());
-        user.set("password", "password");
-        user.set("email", $('#username_input').val() + "@" + $('#username_input').val() + ".com");
-
-        user.signUp(null, {
-            success: function (user) {
-                $('#user_signup').hide();
-                $('#login_button').show();
-                onUserLogin();
-            },
-            error: function (user, error) {
-                // Show the error message somewhere and let the user try again.
-                alert("Error: " + error.code + " " + error.message);
-            }
-        });
-    });
-
-    $("#projects_container").on('click', '.project', function () {
-        cookieHandlerInstance.createCookie(COOKIE_CURRENT_PROJECT,$(this).attr("parseid"));
-        cookieHandlerInstance.createCookie(COOKIE_CURRENT_PROJECT_TITLE,$(this).text());
-        onProjectLoad($(this).attr("parseid"),$(this).text());
-    });
-
-    $('#show_new_project_details_button').click(function () {
-        $('#new_project_details').slideDown();
-    });
-
-    $('#add_project_button').click(function () {
-        var Project = Parse.Object.extend("Projects");
-        var newProject = new Project();
-        newProject.save({title: $('#project_title_input').val(), user: Parse.User.current()}).then(function (object) {
-            addProject(object);
-            $('#new_project_details').slideUp();
-            $('#project_title_input').val("");
-        });
-    });
-});
-
 function loadProjects() {
     var Projects = Parse.Object.extend("Projects");
     var query = new Parse.Query(Projects);
     var username = Parse.User.current().get("username");
-    /*$('#projects_list').text("");*/
+
+    $('#projects_list').text("");
+
     query.equalTo("user", Parse.User.current());
+    query.notEqualTo("state", STATE_DISABLED);
     query.find().then(function (results) {
         var name = "";
         for (var i = 0; i < results.length; i++) {
             var object = results[i];
             addProject(object);
-
         }
     });
 }
 
 function addProject(parseObject) {
-    var element = "<div class='project' parseid='" + parseObject.id + "'>" + parseObject.get("title") + "</div>";
+    var element = "<div class='project' parseid='" + parseObject.id + "'>" + parseObject.get("title") + "<span class='icon delete_icon' id='delete_icon' style='display:none'></span>" + "</div>";
     $('#projects_list').append(element);
 }
 
-function onProjectLoad(id,title){
+function deleteProject(parseid) {
+    var Projects = Parse.Object.extend("Projects");
+    var query = new Parse.Query(Projects);
+    query.equalTo("objectId", parseid);
+    query.first().then(function (proj) {
+        proj.set('state', STATE_DISABLED);
+        proj.save().then(function () {
+            $('#projects_list').text("");
+            loadProjects();
+        });
+    });
+}
+
+function onProjectLoad(id, title) {
     var Project = Parse.Object.extend("Projects");
     currentProject = new Project();
     currentProject.id = id;
@@ -915,39 +788,53 @@ function onProjectLoad(id,title){
 
     $('#projects_container').hide();
     $('#project_title').text(currentProjectTitle);
+    $('#settings_icon').show();
+    $('#goals_icon').show();
+    $('#chart_today_date').text(getShortDate());
+    $('#log_today_date').text(getShortDate());
+    var lastDayOfWeek = new Date(findFirstDateInTheWeek(getShortDate()));
+    lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
+    $('#chart_week_date').text(getShortDate(findFirstDateInTheWeek(getShortDate())) + " - " + getShortDate(lastDayOfWeek));
+    $('#chart_month_date').text(getShortDate(findFirstDateInMonth(getShortDate())) + " - " + getShortDate(findLastDateInMonth(getShortDate())));
     loadApplication();
 
 }
 
-function onUserLogin(){
+function onUserLogin() {
     $('#user_login_container').hide();
     $('#projects_container').fadeIn(1000);
     $('#current_user').text(Parse.User.current().getUsername());
+    $('#settings_panel').show();
+    $('#user_panel').show();
 
     var projectIdFromCookie = cookieHandlerInstance.readCookie(COOKIE_CURRENT_PROJECT);
     var projectTitleFromCookie = cookieHandlerInstance.readCookie(COOKIE_CURRENT_PROJECT_TITLE);
-    var isProjectCached = ((projectIdFromCookie != "") && (projectTitleFromCookie !="") && (projectIdFromCookie!=null) && (projectTitleFromCookie!=null));
-    if (isProjectCached == true){
-        projectTitleFromCookie = decodeURI(projectTitleFromCookie);
-        onProjectLoad(projectIdFromCookie,projectTitleFromCookie);
+    var isProjectCached = ((projectIdFromCookie != "") && (projectTitleFromCookie != "") && (projectIdFromCookie != null) && (projectTitleFromCookie != null));
+    if (isProjectCached == true) {
+        projectTitleFromCookie = decodeURIComponent(projectTitleFromCookie);
+        onProjectLoad(projectIdFromCookie, projectTitleFromCookie);
     }
-    else{
+    else {
         loadProjects();
     }
 }
 
 function loadApplication() {
     $('#application').fadeIn(1000);
+    loadLogEntries();
     updateAllObjects();
 }
 
 
-function toggleLoading(jqueryElementName) {
+function toggleLoading(jqueryElementName, isShowAndHide) {
 
     var URL_LOADING = 'url(loading.gif)';
 
     if ($(jqueryElementName).css('background-image') != 'none') {
         $(jqueryElementName).css('background', '');
+        if (isShowAndHide === true) {
+            $(jqueryElementName).fadeOut();
+        }
     }
     else {
         if ($(jqueryElementName).text() === "") {
@@ -956,6 +843,9 @@ function toggleLoading(jqueryElementName) {
         $(jqueryElementName).css('background-image', 'url(loading.gif)')
             .css('background-repeat', 'no-repeat')
             .css('background-position', 'center');
+        if (isShowAndHide === true) {
+            $(jqueryElementName).fadeIn();
+        }
     }
 }
 
@@ -1121,6 +1011,8 @@ function dailyChart(date) {
 
     var dateToCheck = date ? date : getShortDate();
 
+    toggleLoading('#chart_today_chart_overlay', true);
+
 
     // TODO: handle a case when there's no first lap!!!
     findFirstLap(dateToCheck)  // Get the first lap (use it as the manual lap start time)
@@ -1189,7 +1081,7 @@ function dailyChart(date) {
         })
         .then(function () {
 
-            var chart = new CanvasJS.Chart("chart_today",
+            var chart = new CanvasJS.Chart("chart_today_chart",
                 {
                     backgroundColor: "#f8f8f8",
                     zoomEnabled: true,
@@ -1199,8 +1091,8 @@ function dailyChart(date) {
                     },
                     axisX: {
                         valueFormatString: "HH:mm",
-                       /* interval:1,
-                        intervalType:"hour"*/
+                        /* interval:1,
+                         intervalType:"hour"*/
                     },
                     axisY: {
                         includeZero: false,
@@ -1227,8 +1119,13 @@ function dailyChart(date) {
                     ]
                 });
 
-
-            chart.render();
+            if (dps.length > 0) {
+                chart.render();
+            }
+            else {
+                $('#chart_today_chart').text("No data");
+            }
+            toggleLoading('#chart_today_chart_overlay', true);
             promise.resolve();
         }
     );
@@ -1247,11 +1144,10 @@ function weeklyChart(date) {
     var promise = $.Deferred();
 
     var dateToCheck = date ? date : getShortDate();
+    toggleLoading('#chart_week_chart_overlay', true);
 
     var start = findFirstDateInTheWeek(dateToCheck);
-    var end = new Date();
-
-    end.setDate(start.getDate() + 6);
+    var end = findLastDateInWeek(dateToCheck);
 
     // TODO: handle a case when there's no first lap!!!
     findFirstLap(start, end)  // Get the first lap (use it as the manual lap start time)
@@ -1311,18 +1207,19 @@ function weeklyChart(date) {
                 return a > b ? -1 : a < b ? 1 : 0;
             });
         }).then(function () {
-            return isWeeklyGoalSet(start)
+            return isWeeklyGoalSet(start);
         })
         .then(function (value) {
             if (dps.length > 0 && value) {
                 var goal = value.get("goal") / 3600;
+
                 goalDps.push({x: dps[0].x, y: goal});
                 goalDps.push({x: dps[dps.length - 1].x, y: goal});
             }
         })
         .then(function () {
 
-            var chartx = new CanvasJS.Chart("chart_week",
+            var chartx = new CanvasJS.Chart("chart_week_chart",
                 {
                     backgroundColor: "#f8f8f8",
                     zoomEnabled: true,
@@ -1361,7 +1258,13 @@ function weeklyChart(date) {
                 });
 
 
-            chartx.render();
+            if (dps.length > 0) {
+                chartx.render();
+            }
+            else {
+                $('#chart_week_chart').text("No data");
+            }
+            toggleLoading('#chart_week_chart_overlay', true);
             promise.resolve();
         }
     );
@@ -1378,11 +1281,10 @@ function monthlyChart(date) {
     var length = 0;
 
     var dateToCheck = date ? date : getShortDate();
+    toggleLoading('#chart_month_chart_overlay', true);
 
     var start = findFirstDateInMonth(dateToCheck);
-    var end = new Date();
-    end.setMonth(start.getMonth() + 1);
-    end.setDate(start.getDate() - 1);
+    var end = findLastDateInMonth(dateToCheck);
 
     // TODO: handle a case when there's no first lap!!!
     findFirstLap(start, end)  // Get the first lap (use it as the manual lap start time)
@@ -1453,7 +1355,7 @@ function monthlyChart(date) {
         })
         .then(function () {
 
-            var chartx = new CanvasJS.Chart("chart_month",
+            var chartx = new CanvasJS.Chart("chart_month_chart",
                 {
                     backgroundColor: "#f8f8f8",
                     zoomEnabled: true,
@@ -1491,9 +1393,398 @@ function monthlyChart(date) {
                     ]
                 });
 
-
-            chartx.render();
+            if (dps.length > 0) {
+                chartx.render();
+            }
+            else {
+                $('#chart_month_chart').text("No data");
+            }
+            toggleLoading('#chart_month_chart_overlay', true);
 
         }
     );
+}
+
+/*
+ *  ----------------
+ *  jQuery Functions
+ *  ----------------
+ * */
+
+$(document).ready(function () {
+
+    initParse();
+
+    if (Parse.User.current() != null) {
+        onUserLogin();
+    }
+
+    $("#updateDayGoal").click(function () {
+        $('#updateDayGoalDiv').slideToggle();
+        $(this).toggleClass("grayButton-sel").toggleClass('grayButton');
+    });
+
+    $('#addManualLap_Date').text(getShortDate());
+
+    $('#addManualLapButton').click(function () {
+        $('#addManualLapSection').slideToggle();
+        $(this).toggleClass("smallGrayButton-sel");
+    });
+
+    $('#addManualLap_Save').click(function () {
+        var manualLapLength = $('#manualLapSlider').slider("value");
+        //currentDailyProgress += manualLapLength;
+        saveLap(manualLapLength, this, function () {
+            $('#addManualLapButton').click()
+        }, true);
+    });
+
+    $('.expandCollapseTitle').click(function () {
+        $(this).next().slideToggle();
+    });
+
+    $(".goalTime").click(function () {
+        $(this).next().toggle();
+    });
+
+    // Calls the setGoal function (d/w/m) respectively by the calling element
+    $(".setGoalButton").click(function () {
+        var fn = $(this).attr('id');
+        fn = fn.replace('Button', '');
+        window[fn]();
+    });
+
+    $(".day_week_month_button").click(function () {
+        $(this).siblings().removeClass('day_week_month_button_selected');
+        $(this).addClass('day_week_month_button_selected');
+
+        var id = $(this)[0].id
+        id = id.replace("_button", "");
+        id = "#" + id;
+        $(id).siblings().hide();
+        $(id).show();
+    });
+
+    $("#goals_icon").click(function () {
+        $("#set_goals_container").slideToggle();
+    });
+    $("#settings_icon").click(function () {
+        $("#settings_container").slideToggle();
+    });
+
+    $('#setting_show_breaks_on_graphs').click(function () {
+        setting_show_breaks_on_graphs = $(this).is(':checked');
+    });
+
+    $('#user_log_out_button').click(function () {
+        $('#user_log_out_panel').hide();
+        Parse.User.logOut();
+        $('#projects_list').text("");
+        cookieHandlerInstance.eraseCookie(COOKIE_CURRENT_PROJECT);
+        cookieHandlerInstance.eraseCookie(COOKIE_CURRENT_PROJECT_TITLE);
+        $('#log_table').text("");
+        $('#application').hide();
+        $('#projects_container').hide();
+        $('#settings_icon').hide();
+        $('#goals_icon').hide();
+        $('#user_panel').hide();
+        $('#user_login_container').fadeIn(1000);
+
+    });
+
+    $('#user_icon').mouseenter(function () {
+        $('#user_log_out_panel').slideDown();
+    })
+
+    $('#user_icon').mouseleave(function () {
+        $('#user_log_out_panel').delay(1000).slideUp();
+    })
+
+    $('#user_log_out_panel').mouseenter(function () {
+        $(this).stop(true);
+        $(this).slideDown();
+    })
+    $('#user_log_out_panel').mouseleave(
+        function () {
+            $('#user_log_out_panel').delay(1000).slideUp();
+        });
+
+    $('#login_button').click(function () {
+
+        toggleLoading($(this));
+        var User = Parse.Object.extend("User");
+
+        var query = new Parse.Query(User);
+        query.equalTo("username", $('#username_input').val());
+        query.first().then(function (result) {
+            if (result == undefined) {
+                $('#login_button').hide();
+                toggleLoading($('#login_button'));
+                $('#user_signup').slideDown();
+            }
+            else {
+                Parse.User.logIn($('#username_input').val(), "password").then(function () {
+                    toggleLoading($('#login_button'));
+                    onUserLogin();
+                });
+            }
+        });
+    });
+
+    $('#username_input').keypress(function (e) {
+        var code = e.keyCode || e.which;
+        if (code == ENTER_KEYCODE) {
+            $('#login_button').click();
+        }
+        ;
+        $('#user_signup').slideUp();
+        $('#login_button').show();
+    });
+
+    $('#user_signup_button').click(function () {
+        var user = new Parse.User();
+
+        user.set("username", $('#username_input').val());
+        user.set("password", "password");
+        user.set("email", $('#username_input').val() + "@" + $('#username_input').val() + ".com");
+
+        toggleLoading('#user_signup_button');
+
+        user.signUp(null, {
+            success: function (user) {
+                toggleLoading('#user_signup_button');
+                $('#user_signup').hide();
+                $('#login_button').show();
+                onUserLogin();
+            },
+            error: function (user, error) {
+                // Show the error message somewhere and let the user try again.
+                toggleLoading('#user_signup_button');
+                alert("Error: " + error.code + " " + error.message);
+            }
+        });
+    });
+
+    /* Load Project */
+    $("#projects_container").on('click', '.project', function () {
+        cookieHandlerInstance.createCookie(COOKIE_CURRENT_PROJECT, $(this).attr("parseid"));
+        cookieHandlerInstance.createCookie(COOKIE_CURRENT_PROJECT_TITLE, $(this).text());
+        onProjectLoad($(this).attr("parseid"), $(this).text());
+    });
+
+    /* Project Delete */
+    $("#projects_container").on('mouseenter', '.project',
+        function () {
+            //$('#projects_container' > '.delete_icon').show();
+            $(this).find('.delete_icon').show();
+        }
+    );
+    $("#projects_container").on('mouseleave', '.project',
+        function () {
+            $(this).find('.delete_icon').hide();
+        }
+    );
+
+    $("#projects_container").on('click', '.delete_icon',
+        function (event) {
+            //alert($(this).parent().attr('parseid'));
+            deleteProject($(this).parent().attr('parseid'));
+            event.stopPropagation();
+        }
+    );
+
+
+    $('#show_new_project_details_button').click(function () {
+        $('#new_project_details').slideDown();
+    });
+
+    $('#add_project_button').click(function () {
+        var Project = Parse.Object.extend("Projects");
+        var newProject = new Project();
+        toggleLoading('#add_project_button');
+        newProject.save({title: $('#project_title_input').val(), user: Parse.User.current(), state: STATE_ENABLED}).then(function (object) {
+            toggleLoading('#add_project_button');
+            addProject(object);
+            $('#new_project_details').slideUp();
+            $('#project_title_input').val("");
+        });
+    });
+
+    /* Back to projects list */
+    $('#project_title_container').hover(
+        function () {
+            $(this).find('.back_icon').show();
+        },
+        function () {
+            $(this).find('.back_icon').hide();
+        });
+
+    $('#project_title_container > .back_icon').click(function () {
+        // clear session TODO
+        $('#application').hide();
+        $('#settings_icon').hide();
+        $('#goals_icon').hide();
+        $('#log_table').text("");
+        loadProjects();
+        $('#projects_container').fadeIn();
+    });
+
+    /* Chart Date Handlers */
+    $('#chart_today_back_button').click(function () {
+        clearTimeout(timeOut);
+        var date = new Date($('#chart_today_date').text());
+        date.setDate(date.getDate() - 1);
+        date = getShortDate(date);
+        $('#chart_today_date').text(date);
+        timeOut = setTimeout(function () {
+            dailyChart(date)
+        }, CLICK_TIMEOUT);
+    });
+
+    $('#chart_today_forward_button').click(function () {
+        clearTimeout(timeOut);
+        var date = new Date($('#chart_today_date').text());
+        date.setDate(date.getDate() + 1);
+        date = getShortDate(date);
+        $('#chart_today_date').text(date);
+        timeOut = setTimeout(function () {
+            dailyChart(date)
+        }, CLICK_TIMEOUT);
+    });
+
+    $('#chart_week_back_button').click(function () {
+        clearTimeout(timeOut);
+        var date = new Date($('#chart_week_date').text().substr(0, 10));
+        date.setDate(date.getDate() - 7);
+        var first = findFirstDateInTheWeek(date);
+        var last = findLastDateInWeek(first);
+        $('#chart_week_date').text(getShortDate(first) + " - " + getShortDate(last));
+        timeOut = setTimeout(function () {
+            weeklyChart(first)
+        }, CLICK_TIMEOUT);
+    });
+
+    $('#chart_week_forward_button').click(function () {
+        clearTimeout(timeOut);
+        var date = new Date($('#chart_week_date').text().substr(0, 10));
+        date.setDate(date.getDate() + 7);
+        var first = findFirstDateInTheWeek(date);
+        var last = findLastDateInWeek(first);
+        $('#chart_week_date').text(getShortDate(first) + " - " + getShortDate(last));
+        timeOut = setTimeout(function () {
+            weeklyChart(first)
+        }, CLICK_TIMEOUT);
+    });
+
+
+    $('#chart_month_back_button').click(function () {
+        clearTimeout(timeOut);
+        var date = new Date($('#chart_month_date').text().substr(0, 10));
+        date.setMonth(date.getMonth() - 1);
+        var first = findFirstDateInMonth(date);
+        var last = findLastDateInMonth(date);
+        date = getShortDate(date);
+        $('#chart_month_date').text(getShortDate(first) + " - " + getShortDate(last));
+        timeOut = setTimeout(function () {
+            monthlyChart(first)
+        }, CLICK_TIMEOUT);
+    });
+    $('#chart_month_forward_button').click(function () {
+        clearTimeout(timeOut);
+        var date = new Date($('#chart_month_date').text().substr(0, 10));
+        date.setMonth(date.getMonth() + 1);
+        var first = findFirstDateInMonth(date);
+        var last = findLastDateInMonth(date);
+        date = getShortDate(date);
+        $('#chart_month_date').text(getShortDate(first) + " - " + getShortDate(last));
+        timeOut = setTimeout(function () {
+            monthlyChart(first)
+        }, CLICK_TIMEOUT);
+    });
+
+    /* Log */
+    $('#log_input').keypress(function (e) {
+        var code = e.keyCode || e.which;
+        if (code == ENTER_KEYCODE) {
+            var time = dateObjectToHHMM(new Date());
+            var data = $(this).val();
+            if (data != "") {
+                var Log = Parse.Object.extend("Logs");
+                var logEntry = new Log();
+                toggleLoading('#log_input');
+                logEntry.save({
+                    data: data,
+                    time: time,
+                    date: getShortDate(),
+                    project: currentProject,
+                    type: LOG_ADD_ICON,
+                    state: STATE_ENABLED
+                }).then(function (object) {
+                        toggleLoading('#log_input');
+                        $('#log_input').val("");
+                        addLogEntry(object);
+                    });
+            }
+        }
+    });
+
+    $('.log_today_move_button').click(function () {
+
+        var button = $(this).attr("id");
+        var margin; // TODO:CHANGE VAR NAME
+        button.indexOf("back") == -1 ? margin = 1 : margin = -1;
+        clearTimeout(timeOut);
+        var date = new Date($('#log_today_date').text());
+        date.setDate(date.getDate() + margin);
+        date = getShortDate(date);
+        $('#log_today_date').text(date);
+        $('#log_table').text("");
+
+        timeOut = setTimeout(function () {
+            if (getShortDate() === date) {
+                $('#log_input').show();
+            }
+            else {
+                $('#log_input').hide();
+            }
+            loadLogEntries(date)
+        }, CLICK_TIMEOUT);
+    });
+});
+
+
+/* Log */
+function loadLogEntries(date) {
+    var Log = Parse.Object.extend("Logs");
+    var query = new Parse.Query(Log);
+    date = date ? date : getShortDate();
+    toggleLoading('#log_overlay', true);
+    query.equalTo("project", currentProject);
+    query.equalTo("date", date);
+    query.notEqualTo("state", STATE_DISABLED);
+    query.find().then(function (results) {
+        toggleLoading('#log_overlay', true);
+        for (var i = 0; i < results.length; i++) {
+            var object = results[i];
+            addLogEntry(object);
+        }
+    });
+}
+
+function addLogEntry(parseObject) {
+
+    /*<tr>
+     <td>ICON</td>
+     <td>11:11</td>
+     <td>Added Bla</td>
+     </tr>*/
+
+    var element =
+        "<tr parseid=''" + parseObject.id + "'>" +
+            /* "<td class='log_entry_icon'>"+parseObject.get("type")+"</td>" +*/
+            "<td class='log_entry_time'>" + parseObject.get("time") + "</td>" +
+            "<td class='log_entry_data'>" + parseObject.get("data") + "</td>"
+    "</tr>";
+
+    $('#log_table').append(element);
 }
