@@ -14,6 +14,7 @@ var CLICK_TIMEOUT = 500;
 var currentProject;
 var currentProjectTitle;
 var timeOut = 0;
+var facebookLogin = false;
 
 /* Settings*/
 var setting_show_breaks_on_graphs = false;
@@ -747,7 +748,7 @@ function updateDashboard() {
 function loadProjects() {
     var Projects = Parse.Object.extend("Projects");
     var query = new Parse.Query(Projects);
-    var username = Parse.User.current().get("username");
+    /*var username = Parse.User.current().get("username");*/
 
     $('#projects_list').text(" ");
     toggleLoading('#projects_list');
@@ -794,6 +795,9 @@ function onProjectLoad(id, title) {
     $('#project_title').text(currentProjectTitle);
     $('#settings_icon').show();
     $('#goals_icon').show();
+    if (facebookLogin === true) {
+        $('#facebook_icon').show();
+    }
     $('#chart_today_date').text(getShortDate());
     $('#log_today_date').text(getShortDate());
     var lastDayOfWeek = new Date(findFirstDateInTheWeek(getShortDate()));
@@ -807,7 +811,23 @@ function onProjectLoad(id, title) {
 function onUserLogin() {
     $('#user_login_container').hide();
     $('#projects_container').fadeIn(1000);
-    $('#current_user').text(Parse.User.current().getUsername());
+
+
+    // TODO:improve
+    if (facebookLogin === true) {
+        FB.api(
+            "/me?fields=name",
+            function (response) {
+                if (response && !response.error) {
+                    $('#current_user').text(response.name);
+                }
+            }
+        );
+    }
+    else {
+        $('#current_user').text(Parse.User.current().getUsername());
+    }
+
     $('#settings_panel').show();
     $('#user_panel').show();
 
@@ -1418,48 +1438,10 @@ function monthlyChart(date) {
 $(document).ready(function () {
 
     initParse();
-    initFaceBook(
-
-        function(){
-
-            Parse.FacebookUtils.logIn(null, {
-                success: function(user) {
-                    if (!user.existed()) {
-                        console.log("User signed up and logged in through Facebook!");
-                    } else {
-                        console.log("User logged in through Facebook!");
-                        FB.ui(
-                            {
-                                method: 'feed',
-                                name: 'NetTime',
-                                caption: 'Look what I achieved!',
-                                description: (
-                                    '03:30 Work!'
-                                    ),
-                                link: 'http://localhost:63343/Net',
-                                picture: 'http://localhost:63343/Net/images/logo.png'
-                                /*link: 'http://users14.jabry.com/nettime',*/
-//                                picture: 'http://users14.jabry.com/nettime/images/logo.png'
-                            },
-                            function(response) {
-                                if (response && response.post_id) {
-                                    console.log('Post was published.');
-                                } else {
-                                    console.log('Post was not published.');
-                                }
-                            }
-                        );
-                    }
-                },
-                error: function(user, error) {
-                    console.log("User cancelled the Facebook login or did not fully authorize.");
-                }
-            });
-
-        });
 
 
     if (Parse.User.current() != null) {
+        initFaceBook(loginToFacebookCallback);
         onUserLogin();
     }
 
@@ -1531,6 +1513,7 @@ $(document).ready(function () {
         $('#projects_container').hide();
         $('#settings_icon').hide();
         $('#goals_icon').hide();
+        $('#facebook_icon').hide();
         $('#user_panel').hide();
         $('#user_login_container').fadeIn(1000);
 
@@ -1668,6 +1651,7 @@ $(document).ready(function () {
         $('#application').hide();
         $('#settings_icon').hide();
         $('#goals_icon').hide();
+        $('#facebook_icon').hide();
         $('#log_table').text("");
         loadProjects();
         $('#projects_container').fadeIn();
@@ -1794,11 +1778,25 @@ $(document).ready(function () {
             loadLogEntries(date)
         }, CLICK_TIMEOUT);
     });
+
+    $('#facebook_icon').click(function () {
+        postToFacebook();
+    });
+
+    $('#login_with_nettime').click(function () {
+        $('#facebook_icon_large').hide();
+        $('#nettime_login_container').slideDown();
+    });
+
+    $('#facebook_icon_large').click(function () {
+        initFaceBook(loginToFacebookCallback);
+    });
 });
 
 
 /* Log */
 function loadLogEntries(date) {
+    $('#log_table').text(" ");
     var Log = Parse.Object.extend("Logs");
     var query = new Parse.Query(Log);
     date = date ? date : getShortDate();
@@ -1838,19 +1836,21 @@ function addLogEntry(parseObject) {
 function initFaceBook(updateStatusCallback) {
 
     $.ajaxSetup({ cache: true });
-    $.getScript('//connect.facebook.net/en_UK/all.js', function(){
+    $.getScript('//connect.facebook.net/en_UK/all.js', function () {
         /*FB.init({
-            appId: '801581419859259'
-        });
-        *//*$('#loginbutton,#feedbutton').removeAttr('disabled');*//*
-        FB.getLoginStatus(updateStatusCallback);*/
+         appId: '801581419859259'
+         });
+         */
+        /*$('#loginbutton,#feedbutton').removeAttr('disabled');*/
+        /*
+         FB.getLoginStatus(updateStatusCallback);*/
 
         Parse.FacebookUtils.init({
-            appId      : '801581419859259', // Facebook App ID
-            channelUrl : '//connect.facebook.net/en_UK/all.js', // Channel File
-            status     : true, // check login status
-            cookie     : true, // enable cookies to allow Parse to access the session
-            xfbml      : true  // parse XFBML
+            appId: '801581419859259', // Facebook App ID
+            channelUrl: '//connect.facebook.net/en_UK/all.js', // Channel File
+            status: true, // check login status
+            cookie: true, // enable cookies to allow Parse to access the session
+            xfbml: true  // parse XFBML
         });
 
         FB.getLoginStatus(updateStatusCallback);
@@ -1858,3 +1858,45 @@ function initFaceBook(updateStatusCallback) {
 
 }
 
+function postToFacebook() {
+
+    FB.ui(
+        {
+            method: 'feed',
+            name: 'NetTime',
+            caption: 'Look what I achieved!',
+            description: (
+                'I worked for ' + $('#dashboard_today_hours').text() + ' hours today ' +
+                    'on my ' + $('#project_title').text() + ' project ' +
+                    'and reached ' + $('#daily_goal_percentage').text() + ' of my goal!'
+                ),
+            link: 'http://shaharyakir.github.io/',
+            picture: 'http://shaharyakir.github.io/images/logo.png'
+        },
+        function (response) {
+            if (response && response.post_id) {
+                console.log('Post was published.');
+            } else {
+                console.log('Post was not published.');
+            }
+        }
+    );
+}
+
+function loginToFacebookCallback() {
+
+    Parse.FacebookUtils.logIn(null, {
+        success: function (user) {
+            if (!user.existed()) {
+                console.log("User signed up and logged in through Facebook!");
+            } else {
+                console.log("User logged in through Facebook!");
+                facebookLogin = true;
+                onUserLogin();
+            }
+        },
+        error: function (user, error) {
+            console.log("User cancelled the Facebook login or did not fully authorize.");
+        }
+    });
+}
