@@ -749,12 +749,13 @@ function loadProjects() {
     var query = new Parse.Query(Projects);
     var username = Parse.User.current().get("username");
 
-    $('#projects_list').text("");
+    $('#projects_list').text(" ");
+    toggleLoading('#projects_list');
 
     query.equalTo("user", Parse.User.current());
     query.notEqualTo("state", STATE_DISABLED);
     query.find().then(function (results) {
-        var name = "";
+        toggleLoading('#projects_list');
         for (var i = 0; i < results.length; i++) {
             var object = results[i];
             addProject(object);
@@ -763,7 +764,10 @@ function loadProjects() {
 }
 
 function addProject(parseObject) {
-    var element = "<div class='project' parseid='" + parseObject.id + "'>" + parseObject.get("title") + "<span class='icon delete_icon' id='delete_icon' style='display:none'></span>" + "</div>";
+    var element =
+        "<div class='project' parseid='" + parseObject.id + "'>" + parseObject.get("title") +
+            "<span class='icon delete_icon' id='delete_icon' style='display:none'></span>" +
+            "</div>";
     $('#projects_list').append(element);
 }
 
@@ -1086,7 +1090,7 @@ function dailyChart(date) {
                     backgroundColor: "#f8f8f8",
                     zoomEnabled: true,
                     height: 290,
-                    width: 650,
+//                    width: "30%",
                     title: {
                     },
                     axisX: {
@@ -1224,7 +1228,7 @@ function weeklyChart(date) {
                     backgroundColor: "#f8f8f8",
                     zoomEnabled: true,
                     height: 290,
-                    width: 650,
+//                    width: 650,
                     title: {
                     },
                     axisX: {
@@ -1360,7 +1364,7 @@ function monthlyChart(date) {
                     backgroundColor: "#f8f8f8",
                     zoomEnabled: true,
                     height: 290,
-                    width: 650,
+//                    width: 650,
                     title: {
                     },
                     axisX: {
@@ -1414,6 +1418,46 @@ function monthlyChart(date) {
 $(document).ready(function () {
 
     initParse();
+    initFaceBook(
+
+        function(){
+
+            Parse.FacebookUtils.logIn(null, {
+                success: function(user) {
+                    if (!user.existed()) {
+                        console.log("User signed up and logged in through Facebook!");
+                    } else {
+                        console.log("User logged in through Facebook!");
+                        FB.ui(
+                            {
+                                method: 'feed',
+                                name: 'NetTime',
+                                caption: 'Look what I achieved!',
+                                description: (
+                                    '03:30 Work!'
+                                    ),
+                                link: 'http://localhost:63343/Net',
+                                picture: 'http://localhost:63343/Net/images/logo.png'
+                                /*link: 'http://users14.jabry.com/nettime',*/
+//                                picture: 'http://users14.jabry.com/nettime/images/logo.png'
+                            },
+                            function(response) {
+                                if (response && response.post_id) {
+                                    console.log('Post was published.');
+                                } else {
+                                    console.log('Post was not published.');
+                                }
+                            }
+                        );
+                    }
+                },
+                error: function(user, error) {
+                    console.log("User cancelled the Facebook login or did not fully authorize.");
+                }
+            });
+
+        });
+
 
     if (Parse.User.current() != null) {
         onUserLogin();
@@ -1788,3 +1832,29 @@ function addLogEntry(parseObject) {
 
     $('#log_table').append(element);
 }
+
+
+/* */
+function initFaceBook(updateStatusCallback) {
+
+    $.ajaxSetup({ cache: true });
+    $.getScript('//connect.facebook.net/en_UK/all.js', function(){
+        /*FB.init({
+            appId: '801581419859259'
+        });
+        *//*$('#loginbutton,#feedbutton').removeAttr('disabled');*//*
+        FB.getLoginStatus(updateStatusCallback);*/
+
+        Parse.FacebookUtils.init({
+            appId      : '801581419859259', // Facebook App ID
+            channelUrl : '//connect.facebook.net/en_UK/all.js', // Channel File
+            status     : true, // check login status
+            cookie     : true, // enable cookies to allow Parse to access the session
+            xfbml      : true  // parse XFBML
+        });
+
+        FB.getLoginStatus(updateStatusCallback);
+    });
+
+}
+
