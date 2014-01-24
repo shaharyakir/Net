@@ -1,53 +1,51 @@
+var that = {};
+
 /*
- Constants & Gloabal Vars
+ Gloabal Vars
  */
-var COOKIE_CURRENT_LAP = "currentLap";
-var COOKIE_CURRENT_PROJECT = "currentProjectId";
-var COOKIE_CURRENT_PROJECT_TITLE = "currentProjectTitle";
-var HOUR = 3600;
-var MILLISECONDS = 1000;
-var UPDATE_INTERVAL = 100;
-var CLICK_TIMEOUT = 500;
-//var currentGoalLength = 0;
-//var currentDailyProgress = 0;
-//var currentProjectId;
 var currentProject;
 var currentProjectTitle;
 var timeOut = 0;
-var facebookLogin = false;
 
 /* Settings*/
 var setting_show_breaks_on_graphs = false;
 
-/*
- Parse.com constants
- */
-var WEEKLY_GOAL_TYPE = "WEEKLY";
-var MONTHLY_GOAL_TYPE = "MONTHLY";
-var DAILY_GOAL_TYPE = "DAILY";
-var STATE_ENABLED = 1;
-var STATE_DISABLED = 2;
-var ENTER_KEYCODE = 13;
+/*Constants*/
+that.Constants = {
+    Parse: {
+        WEEKLY_GOAL_TYPE: "WEEKLY",
+        MONTHLY_GOAL_TYPE: "MONTHLY",
+        DAILY_GOAL_TYPE: "DAILY",
+        STATE_ENABLED: 1,
+        STATE_DISABLED: 2,
+        LOG_ADD_ICON: 1,
+        LOG_BREAK_ICON: 2,
+        LOG_MISC_ICON: 3
+    },
+    General: {
+        ENTER_KEYCODE: 13,
+        CLICK_TIMEOUT: 500,
+        HOUR: 3600,
+        MILLISECONDS: 1000,
+        UPDATE_INTERVAL: 100
+    },
+    Cookies: {
+        COOKIE_CURRENT_LAP: "currentLap",
+        COOKIE_CURRENT_PROJECT: "currentProjectId",
+        COOKIE_CURRENT_PROJECT_TITLE: "currentProjectTitle"
+    }
+};
 
-var LOG_ADD_ICON = 1;
-var LOG_BREAK_ICON = 2;
-var LOG_MISC_ICON = 3;
-
-// TODO: wrap in a cookie Handler object - when I learn OO!
-/*
- ================
- Cookie functions
- ================
- */
-var cookieHandler = function () {
-    this.createCookie = function (name, value) {
+/* Cookie functions */
+that.CookieHandler = {
+    createCookie: function (name, value) {
         var exdays = 365;
         var exdate = new Date();
         exdate.setDate(exdate.getDate() + exdays);
         value = escape(value) + ((exdays == null) ? "" : "; expires=" + exdate.toUTCString());
         document.cookie = name + "=" + value;
-    }
-    this.readCookie = function (name) {
+    },
+    readCookie: function (name) {
         var nameEQ = name + "=";
         var ca = document.cookie.split(';');
         for (var i = 0; i < ca.length; i++) {
@@ -56,11 +54,125 @@ var cookieHandler = function () {
             if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
         }
         return null;
-    };
-    this.eraseCookie = function (name) {
+    },
+    eraseCookie: function (name) {
         this.createCookie(name, "", -1);
-    };
-};
+    }
+}
+
+that.Session = {
+    facebookLogin: false,
+    clear: function () {
+
+        $('#user_log_out_panel').hide();
+        $('#projects_list').text("");
+        that.CookieHandler.eraseCookie(that.Constants.Cookies.COOKIE_CURRENT_PROJECT);
+        that.CookieHandler.eraseCookie(that.Constants.Cookies.COOKIE_CURRENT_PROJECT_TITLE);
+        $('#log_table').text("");
+        $('#application').hide();
+        $('#projects_container').hide();
+        $('#settings_icon').hide();
+        $('#goals_icon').hide();
+        $('#facebook_icon').hide();
+        $('#user_panel').hide();
+        $('#facebook_icon_large').show();
+        $('#nettime_login_container').hide();
+        $('#back_to_login_with_facebook').parent().hide();
+        $('#login_with_nettime').parent().show();
+
+        that.Session.facebookLogin = false;
+        Parse.User.logOut();
+    }
+}
+
+that.Facebook = {
+    init: function () {
+
+        $.ajaxSetup({ cache: true });
+        $.getScript('//connect.facebook.net/en_UK/all.js', function () {
+            Parse.FacebookUtils.init({
+                appId: '801581419859259', // Facebook App ID
+                status: false, // check login status
+                cookie: true, // enable cookies to allow Parse to access the session
+                xfbml: true  // parse XFBML
+            });
+
+            if (that.Session.facebookLogin === false) {
+
+                Parse.FacebookUtils.logIn(null, {
+                    success: function (user) {
+                        if (!user.existed()) {
+                            console.log("User signed up and logged in through Facebook!");
+                            that.Session.facebookLogin = true;
+                            onUserLogin();
+                        } else {
+                            console.log("User logged in through Facebook!");
+                            that.Session.facebookLogin = true;
+                            onUserLogin();
+                        }
+                    },
+                    error: function (user, error) {
+                        console.log("User cancelled the Facebook login or did not fully authorize.");
+                    }
+                });
+            }
+            else {
+                console.log("User was already logged in through Facebook! Proceeding to nettime login");
+                that.Session.facebookLogin = true;
+                onUserLogin();
+            }
+        });
+
+
+    },
+    postToFacebook: function () {
+
+        FB.ui(
+            {
+                method: 'feed',
+                name: 'NetTime',
+                caption: 'Look what I achieved!',
+                description: (
+                    'I worked for ' + $('#dashboard_today_hours').text() + ' hours today ' +
+                        'on my ' + $('#project_title').text() + ' project ' +
+                        'and reached ' + $('#daily_goal_percentage').text() + ' of my goal!'
+                    ),
+                link: 'http://shaharyakir.github.io/',
+                picture: 'http://shaharyakir.github.io/images/logo.png'
+            },
+            function (response) {
+                if (response && response.post_id) {
+                    console.log('Post was published.');
+                } else {
+                    console.log('Post was not published.');
+                }
+            }
+        );
+    }
+}
+
+that.Goals = {
+    isAllGoalsSet: function () {
+        var promise = $.Deferred();
+        var answer = new Boolean(true);
+        isDailyGoalSet()
+            .then(function (value) {
+
+                answer = answer && (value != undefined);
+
+            })
+            .then(isWeeklyGoalSet()
+                .then(function (value) {
+                    answer = answer && (value != undefined);
+                }))
+            .then(isMonthlyGoalSet()
+                .then(function (value) {
+                    answer = answer && (value != undefined);
+                    promise.resolve(answer);
+                }));
+        return promise;
+    }
+}
 
 /*
  ================
@@ -108,7 +220,7 @@ var clsStopwatch = function () {
 var x = new clsStopwatch();
 var time;
 var clocktimer;
-var cookieHandlerInstance = new cookieHandler();
+
 /*
  ===========================
  Stopwatch related functions
@@ -121,7 +233,7 @@ function stop() {
 
     clearInterval(clocktimer);
 
-    cookieHandlerInstance.eraseCookie(COOKIE_CURRENT_LAP);
+    that.CookieHandler.eraseCookie(that.Constants.Cookies.COOKIE_CURRENT_LAP);
 
     reset();
 
@@ -133,7 +245,7 @@ function reset() {
 }
 function update() {
     $('#time').text(formatTime(x.time()));
-    cookieHandlerInstance.createCookie(COOKIE_CURRENT_LAP, x.time());
+    that.CookieHandler.createCookie(that.Constants.Cookies.COOKIE_CURRENT_LAP, x.time());
     document.title = "(" + formatTime(x.time()) + ")" + " Running";
 
 }
@@ -143,19 +255,15 @@ function start() {
     var button = document.getElementById("startButton");
 
     if (button.innerHTML == "Start") {
-        clocktimer = setInterval("update()", UPDATE_INTERVAL);
+        clocktimer = setInterval("update()", that.Constants.General.UPDATE_INTERVAL);
         x.start();
     }
     else {
-        var howLong = document.getElementById("time").innerHTML;
-
         saveLap(timeStringToSeconds($('#time').text()), '#startButton');
-
         stop();
         document.title = "Stopped";
     }
-    var newVal = button.innerHTML == "Start" ? "Stop" : "Start";
-    button.innerHTML = newVal;
+    button.innerHTML = button.innerHTML == "Start" ? "Stop" : "Start";
 }
 
 function saveLap(value, jqueryPressedElement, callback, isManual) {
@@ -177,15 +285,20 @@ function saveLap(value, jqueryPressedElement, callback, isManual) {
 }
 
 function updateAllObjects() {
-    //buildWeekTable();
-    //updateProgressBar();
     updateDashboard();
-    areAllGoalsSet().then(function (value) {
-        if (value === true) {
-            $("#center_section").slideDown();
-        }
-    })
+    showWarningIfNotAllGoalsAreSet();
     renderCharts();
+}
+
+function showWarningIfNotAllGoalsAreSet(){
+    that.Goals.isAllGoalsSet().then(function(value){
+        if (value !== true){
+            $('#warning_goals').show();
+        }
+        else{
+            $('#warning_goals').hide();
+        }
+    });
 }
 
 /*
@@ -334,7 +447,7 @@ function show() {
     time = document.getElementById('time');
 
     // Restore unsaved lap if browser exited unexpectedly
-    var unsavedLap = cookieHandlerInstance.readCookie(COOKIE_CURRENT_LAP);
+    var unsavedLap = that.CookieHandler.readCookie(that.Constants.Cookies.COOKIE_CURRENT_LAP);
     if (unsavedLap > 0) {
         x.setLapTime(unsavedLap);
     }
@@ -468,35 +581,6 @@ function show() {
 
  */
 
-/*
- ================
- All Goals
- ================
- */
-function areAllGoalsSet() {
-
-    var promise = $.Deferred();
-
-    var answer = new Boolean(true);
-
-    isDailyGoalSet()
-        .then(function (value) {
-
-            answer = answer && (value != undefined);
-
-        })
-        .then(isWeeklyGoalSet()
-            .then(function (value) {
-                answer = answer && (value != undefined);
-            }))
-        .then(isMonthlyGoalSet()
-            .then(function (value) {
-                answer = answer && (value != undefined);
-                promise.resolve(answer);
-            }));
-    return promise;
-}
-
 
 function getGoalTime(value) {
     return secondsToString(value).substr(0, 5);
@@ -552,7 +636,7 @@ function setGoal(date, type, length) {
 function setDailyGoal() {
     var goal = timeStringToSeconds($("#goal_time_to_set_day").text());
     var date = getShortDate();
-    setGoal(date, DAILY_GOAL_TYPE, goal).then(function () {
+    setGoal(date, that.Constants.Parse.DAILY_GOAL_TYPE, goal).then(function () {
         $("#setDailyGoalSection").hide();
     });
 }
@@ -561,7 +645,7 @@ function isDailyGoalSet(date) {
     var promise = $.Deferred();
     date = date ? date : getShortDate();
 
-    isGoalSet(date, DAILY_GOAL_TYPE).then(function (value) {
+    isGoalSet(date, that.Constants.Parse.DAILY_GOAL_TYPE).then(function (value) {
         promise.resolve(value);
         if (!value) {
             $("#setDailyGoalSection").show();
@@ -584,7 +668,7 @@ function isDailyGoalSet(date) {
 function setWeeklyGoal() {
     var goal = timeStringToSeconds($("#goal_time_to_set_week").text());
     var date = getShortDate(findFirstDateInTheWeek(getShortDate()));
-    setGoal(date, WEEKLY_GOAL_TYPE, goal).then(function () {
+    setGoal(date, that.Constants.Parse.WEEKLY_GOAL_TYPE, goal).then(function () {
         $("#setWeeklyGoalSection").hide();
     });
 }
@@ -593,7 +677,7 @@ function isWeeklyGoalSet(date) {
     var promise = $.Deferred();
     date = date ? getShortDate(date) : getShortDate(findFirstDateInTheWeek(getShortDate()));
 
-    $.when(isGoalSet(date, WEEKLY_GOAL_TYPE).done(function (value) {
+    $.when(isGoalSet(date, that.Constants.Parse.WEEKLY_GOAL_TYPE).done(function (value) {
         promise.resolve(value);
         if (!value) {
             $("#setWeeklyGoalSection").show();
@@ -616,7 +700,7 @@ function isWeeklyGoalSet(date) {
 function setMonthlyGoal() {
     var goal = timeStringToSeconds($("#goal_time_to_set_month").text());
     var date = getShortDate(findFirstDateInMonth(getShortDate()));
-    setGoal(date, MONTHLY_GOAL_TYPE, goal).then(function () {
+    setGoal(date, that.Constants.Parse.MONTHLY_GOAL_TYPE, goal).then(function () {
         $("#setMonthlyGoalSection").hide();
     });
 }
@@ -624,7 +708,7 @@ function setMonthlyGoal() {
 function isMonthlyGoalSet(date) {
     var promise = $.Deferred();
     date = date ? getShortDate(date) : getShortDate(findFirstDateInMonth(getShortDate()));
-    $.when(isGoalSet(date, MONTHLY_GOAL_TYPE).done(function (value) {
+    $.when(isGoalSet(date, that.Constants.Parse.MONTHLY_GOAL_TYPE).done(function (value) {
         promise.resolve(value);
         if (!value) {
             $("#setMonthlyGoalSection").show();
@@ -705,13 +789,25 @@ function updateDashboard() {
             $("#dashboard_today_hours").text(Math.ceil((value / 3600) * 10) / 10);
             $("#dashboard_today_time").text(secondsToString(value));
             var dailyGoal = timeStringToSeconds($("#goalTime_day").text());
-            var dailyGoalLeft = dailyGoal - value;
-            $("#goalTime_day_left").text(secondsToString(dailyGoalLeft).substr(0, 5));
             $("#daily_goal_percentage").text(dividedValueToPercentage(value / dailyGoal));
-            var bestPossibleTime = new Date()
-            bestPossibleTime.setTime((dailyGoalLeft * MILLISECONDS) + bestPossibleTime.getTime());
-            bestPossibleTime = dateObjectToHHMM(bestPossibleTime);
-            $("#goalTime_day_best_time").text(bestPossibleTime);
+            if (value/dailyGoal >= 1){
+                $("#daily_goal_percentage").css('color','lightgreen');
+                $("#dashboard_today_hours").css('color','lightgreen');
+            }
+
+            var dailyGoalLeft = dailyGoal - value;
+
+            if (dailyGoalLeft > 0) {
+                var bestPossibleTime = new Date()
+                bestPossibleTime.setTime((dailyGoalLeft * that.Constants.General.MILLISECONDS) + bestPossibleTime.getTime());
+                bestPossibleTime = dateObjectToHHMM(bestPossibleTime);
+                $("#goalTime_day_best_time").text(bestPossibleTime);
+                $("#goalTime_day_left").text(secondsToString(dailyGoalLeft).substr(0, 5));
+            }
+            else {
+                $("#goalTime_day_best_time").text("N/A");
+                $("#goalTime_day_left").text(secondsToString(0).substr(0, 5));
+            }
             toggleLoading('#dashboard_today_hours');
         });
     });
@@ -724,8 +820,17 @@ function updateDashboard() {
             $("#dashboard_week_time").text(secondsToString(value));
             var weeklyGoal = timeStringToSeconds($("#goalTime_week").text());
             $("#weekly_goal_percentage").text(dividedValueToPercentage(value / weeklyGoal));
+            if (value/weeklyGoal >= 1){
+                $("#weekly_goal_percentage").css('color','lightgreen');
+                $("#dashboard_week_hours").css('color','lightgreen');
+            }
             var weeklyGoalLeft = weeklyGoal - value;
-            $("#goalTime_week_left").text(secondsToString(weeklyGoalLeft).substr(0, 5));
+            if (weeklyGoalLeft > 0) {
+                $("#goalTime_week_left").text(secondsToString(weeklyGoalLeft).substr(0, 5));
+            }
+            else {
+                $("#goalTime_week_left").text(secondsToString(0).substr(0, 5));
+            }
             toggleLoading('#dashboard_week_hours');
         });
     });
@@ -739,7 +844,16 @@ function updateDashboard() {
             var monthlyGoal = timeStringToSeconds($("#goalTime_month").text());
             $("#monthly_goal_percentage").text(dividedValueToPercentage(value / monthlyGoal));
             var monthlyGoalLeft = monthlyGoal - value;
-            $("#goalTime_month_left").text(secondsToString(monthlyGoalLeft).substr(0, 5));
+            if (value/monthlyGoal >= 1){
+                $("#monthly_goal_percentage").css('color','lightgreen');
+                $("#dashboard_month_hours").css('color','lightgreen');
+            }
+            if (monthlyGoalLeft > 0) {
+                $("#goalTime_month_left").text(secondsToString(monthlyGoalLeft).substr(0, 5));
+            }
+            else {
+                $("#goalTime_month_left").text(secondsToString(0).substr(0, 5));
+            }
             toggleLoading('#dashboard_month_hours');
         });
     });
@@ -754,7 +868,7 @@ function loadProjects() {
     toggleLoading('#projects_list');
 
     query.equalTo("user", Parse.User.current());
-    query.notEqualTo("state", STATE_DISABLED);
+    query.notEqualTo("state", that.Constants.Parse.STATE_DISABLED);
     query.find().then(function (results) {
         toggleLoading('#projects_list');
         for (var i = 0; i < results.length; i++) {
@@ -777,7 +891,7 @@ function deleteProject(parseid) {
     var query = new Parse.Query(Projects);
     query.equalTo("objectId", parseid);
     query.first().then(function (proj) {
-        proj.set('state', STATE_DISABLED);
+        proj.set('state', that.Constants.Parse.STATE_DISABLED);
         proj.save().then(function () {
             $('#projects_list').text("");
             loadProjects();
@@ -795,7 +909,7 @@ function onProjectLoad(id, title) {
     $('#project_title').text(currentProjectTitle);
     $('#settings_icon').show();
     $('#goals_icon').show();
-    if (facebookLogin === true) {
+    if (that.Session.facebookLogin === true) {
         $('#facebook_icon').show();
     }
     $('#chart_today_date').text(getShortDate());
@@ -812,9 +926,8 @@ function onUserLogin() {
     $('#user_login_container').hide();
     $('#projects_container').fadeIn(1000);
 
-
     // TODO:improve
-    if (facebookLogin === true) {
+    if (that.Session.facebookLogin === true) {
         FB.api(
             "/me?fields=name",
             function (response) {
@@ -831,8 +944,8 @@ function onUserLogin() {
     $('#settings_panel').show();
     $('#user_panel').show();
 
-    var projectIdFromCookie = cookieHandlerInstance.readCookie(COOKIE_CURRENT_PROJECT);
-    var projectTitleFromCookie = cookieHandlerInstance.readCookie(COOKIE_CURRENT_PROJECT_TITLE);
+    var projectIdFromCookie = that.CookieHandler.readCookie(that.Constants.Cookies.COOKIE_CURRENT_PROJECT);
+    var projectTitleFromCookie = that.CookieHandler.readCookie(that.Constants.Cookies.COOKIE_CURRENT_PROJECT_TITLE);
     var isProjectCached = ((projectIdFromCookie != "") && (projectTitleFromCookie != "") && (projectIdFromCookie != null) && (projectTitleFromCookie != null));
     if (isProjectCached == true) {
         projectTitleFromCookie = decodeURIComponent(projectTitleFromCookie);
@@ -846,9 +959,9 @@ function onUserLogin() {
 function loadApplication() {
     $('#application').fadeIn(1000);
     loadLogEntries();
+    showWarningIfNotAllGoalsAreSet();
     updateAllObjects();
 }
-
 
 function toggleLoading(jqueryElementName, isShowAndHide) {
 
@@ -880,32 +993,32 @@ $(function () {
     $("#manualLapSlider").slider({
         max: 36000,
         step: 300,
-        change: function (event, ui) {
+        slide: function (event, ui) {
             $('#addManualLap_Length').text(getGoalTime(ui.value));
         }
     });
 
 
     $("#dailyGoalSlider").slider({
-        max: 10 * HOUR,
-        step: 0.5 * HOUR,
-        change: function (event, ui) {
+        max: 10 * that.Constants.General.HOUR,
+        step: 0.5 * that.Constants.General.HOUR,
+        slide: function (event, ui) {
             $('#goal_time_to_set_day').text(getGoalTime(ui.value));
         }
     });
 
     $("#weeklyGoalSlider").slider({
-        max: 30 * HOUR,
-        step: 1 * HOUR,
-        change: function (event, ui) {
+        max: 30 * that.Constants.General.HOUR,
+        step: 1 * that.Constants.General.HOUR,
+        slide: function (event, ui) {
             $('#goal_time_to_set_week').text(getGoalTime(ui.value));
         }
     });
 
     $("#monthlyGoalSlider").slider({
-        max: 95 * HOUR,
-        step: 5 * HOUR,
-        change: function (event, ui) {
+        max: 95 * that.Constants.General.HOUR,
+        step: 5 * that.Constants.General.HOUR,
+        slide: function (event, ui) {
             $('#goal_time_to_set_month').text(getGoalTime(ui.value));
         }
     });
@@ -977,7 +1090,7 @@ function findFirstLap(startDate, endDate) {
     query.equalTo("project", currentProject);
     query.ascending("createdAt");
     query.first().then(function (result) {
-        var val = result ? (result.createdAt - (result.get("length") * MILLISECONDS)) : undefined;
+        var val = result ? (result.createdAt - (result.get("length") * that.Constants.General.MILLISECONDS)) : undefined;
         promise.resolve(val);
     });
 
@@ -1439,10 +1552,15 @@ $(document).ready(function () {
 
     initParse();
 
-
     if (Parse.User.current() != null) {
-        initFaceBook(loginToFacebookCallback);
-        onUserLogin();
+        that.Session.facebookLogin = Parse.FacebookUtils.isLinked(Parse.User.current());
+
+        if (that.Session.facebookLogin === true) {
+            that.Facebook.init();
+        }
+        else {
+            onUserLogin();
+        }
     }
 
     $("#updateDayGoal").click(function () {
@@ -1503,18 +1621,8 @@ $(document).ready(function () {
     });
 
     $('#user_log_out_button').click(function () {
-        $('#user_log_out_panel').hide();
-        Parse.User.logOut();
-        $('#projects_list').text("");
-        cookieHandlerInstance.eraseCookie(COOKIE_CURRENT_PROJECT);
-        cookieHandlerInstance.eraseCookie(COOKIE_CURRENT_PROJECT_TITLE);
-        $('#log_table').text("");
-        $('#application').hide();
-        $('#projects_container').hide();
-        $('#settings_icon').hide();
-        $('#goals_icon').hide();
-        $('#facebook_icon').hide();
-        $('#user_panel').hide();
+
+        that.Session.clear();
         $('#user_login_container').fadeIn(1000);
 
     });
@@ -1548,6 +1656,7 @@ $(document).ready(function () {
                 $('#login_button').hide();
                 toggleLoading($('#login_button'));
                 $('#user_signup').slideDown();
+                $('#back_to_login_with_facebook').hide();
             }
             else {
                 Parse.User.logIn($('#username_input').val(), "password").then(function () {
@@ -1560,7 +1669,7 @@ $(document).ready(function () {
 
     $('#username_input').keypress(function (e) {
         var code = e.keyCode || e.which;
-        if (code == ENTER_KEYCODE) {
+        if (code == that.Constants.General.ENTER_KEYCODE) {
             $('#login_button').click();
         }
         ;
@@ -1594,8 +1703,8 @@ $(document).ready(function () {
 
     /* Load Project */
     $("#projects_container").on('click', '.project', function () {
-        cookieHandlerInstance.createCookie(COOKIE_CURRENT_PROJECT, $(this).attr("parseid"));
-        cookieHandlerInstance.createCookie(COOKIE_CURRENT_PROJECT_TITLE, $(this).text());
+        that.CookieHandler.createCookie(that.Constants.Cookies.COOKIE_CURRENT_PROJECT, $(this).attr("parseid"));
+        that.CookieHandler.createCookie(that.Constants.Cookies.COOKIE_CURRENT_PROJECT_TITLE, $(this).text());
         onProjectLoad($(this).attr("parseid"), $(this).text());
     });
 
@@ -1629,7 +1738,7 @@ $(document).ready(function () {
         var Project = Parse.Object.extend("Projects");
         var newProject = new Project();
         toggleLoading('#add_project_button');
-        newProject.save({title: $('#project_title_input').val(), user: Parse.User.current(), state: STATE_ENABLED}).then(function (object) {
+        newProject.save({title: $('#project_title_input').val(), user: Parse.User.current(), state: that.Constants.Parse.STATE_ENABLED}).then(function (object) {
             toggleLoading('#add_project_button');
             addProject(object);
             $('#new_project_details').slideUp();
@@ -1666,7 +1775,7 @@ $(document).ready(function () {
         $('#chart_today_date').text(date);
         timeOut = setTimeout(function () {
             dailyChart(date)
-        }, CLICK_TIMEOUT);
+        }, that.Constants.General.CLICK_TIMEOUT);
     });
 
     $('#chart_today_forward_button').click(function () {
@@ -1677,7 +1786,7 @@ $(document).ready(function () {
         $('#chart_today_date').text(date);
         timeOut = setTimeout(function () {
             dailyChart(date)
-        }, CLICK_TIMEOUT);
+        }, that.Constants.General.CLICK_TIMEOUT);
     });
 
     $('#chart_week_back_button').click(function () {
@@ -1689,7 +1798,7 @@ $(document).ready(function () {
         $('#chart_week_date').text(getShortDate(first) + " - " + getShortDate(last));
         timeOut = setTimeout(function () {
             weeklyChart(first)
-        }, CLICK_TIMEOUT);
+        }, that.Constants.General.CLICK_TIMEOUT);
     });
 
     $('#chart_week_forward_button').click(function () {
@@ -1701,7 +1810,7 @@ $(document).ready(function () {
         $('#chart_week_date').text(getShortDate(first) + " - " + getShortDate(last));
         timeOut = setTimeout(function () {
             weeklyChart(first)
-        }, CLICK_TIMEOUT);
+        }, that.Constants.General.CLICK_TIMEOUT);
     });
 
 
@@ -1715,7 +1824,7 @@ $(document).ready(function () {
         $('#chart_month_date').text(getShortDate(first) + " - " + getShortDate(last));
         timeOut = setTimeout(function () {
             monthlyChart(first)
-        }, CLICK_TIMEOUT);
+        }, that.Constants.General.CLICK_TIMEOUT);
     });
     $('#chart_month_forward_button').click(function () {
         clearTimeout(timeOut);
@@ -1727,13 +1836,13 @@ $(document).ready(function () {
         $('#chart_month_date').text(getShortDate(first) + " - " + getShortDate(last));
         timeOut = setTimeout(function () {
             monthlyChart(first)
-        }, CLICK_TIMEOUT);
+        }, that.Constants.General.CLICK_TIMEOUT);
     });
 
     /* Log */
     $('#log_input').keypress(function (e) {
         var code = e.keyCode || e.which;
-        if (code == ENTER_KEYCODE) {
+        if (code == that.Constants.General.ENTER_KEYCODE) {
             var time = dateObjectToHHMM(new Date());
             var data = $(this).val();
             if (data != "") {
@@ -1745,8 +1854,8 @@ $(document).ready(function () {
                     time: time,
                     date: getShortDate(),
                     project: currentProject,
-                    type: LOG_ADD_ICON,
-                    state: STATE_ENABLED
+                    type: that.Constants.Parse.LOG_ADD_ICON,
+                    state: that.Constants.Parse.STATE_ENABLED
                 }).then(function (object) {
                         toggleLoading('#log_input');
                         $('#log_input').val("");
@@ -1776,20 +1885,30 @@ $(document).ready(function () {
                 $('#log_input').hide();
             }
             loadLogEntries(date)
-        }, CLICK_TIMEOUT);
+        }, that.Constants.General.CLICK_TIMEOUT);
     });
 
     $('#facebook_icon').click(function () {
-        postToFacebook();
+        that.Facebook.postToFacebook();
     });
 
     $('#login_with_nettime').click(function () {
+        $(this).parent().hide();
         $('#facebook_icon_large').hide();
+        $('#back_to_login_with_facebook').parent().show();
         $('#nettime_login_container').slideDown();
     });
 
+    $('#back_to_login_with_facebook').click(function () {
+        $(this).parent().hide();
+        $('#login_with_nettime').parent().show();
+        $('#nettime_login_container').slideUp();
+        $('#facebook_icon_large').show();
+    });
+
     $('#facebook_icon_large').click(function () {
-        initFaceBook(loginToFacebookCallback);
+        toggleLoading('#facebook_icon_large');
+        that.Facebook.init();
     });
 });
 
@@ -1803,7 +1922,7 @@ function loadLogEntries(date) {
     toggleLoading('#log_overlay', true);
     query.equalTo("project", currentProject);
     query.equalTo("date", date);
-    query.notEqualTo("state", STATE_DISABLED);
+    query.notEqualTo("state", that.Constants.Parse.STATE_DISABLED);
     query.find().then(function (results) {
         toggleLoading('#log_overlay', true);
         for (var i = 0; i < results.length; i++) {
@@ -1832,71 +1951,3 @@ function addLogEntry(parseObject) {
 }
 
 
-/* */
-function initFaceBook(updateStatusCallback) {
-
-    $.ajaxSetup({ cache: true });
-    $.getScript('//connect.facebook.net/en_UK/all.js', function () {
-        /*FB.init({
-         appId: '801581419859259'
-         });
-         */
-        /*$('#loginbutton,#feedbutton').removeAttr('disabled');*/
-        /*
-         FB.getLoginStatus(updateStatusCallback);*/
-
-        Parse.FacebookUtils.init({
-            appId: '801581419859259', // Facebook App ID
-            channelUrl: '//connect.facebook.net/en_UK/all.js', // Channel File
-            status: true, // check login status
-            cookie: true, // enable cookies to allow Parse to access the session
-            xfbml: true  // parse XFBML
-        });
-
-        FB.getLoginStatus(updateStatusCallback);
-    });
-
-}
-
-function postToFacebook() {
-
-    FB.ui(
-        {
-            method: 'feed',
-            name: 'NetTime',
-            caption: 'Look what I achieved!',
-            description: (
-                'I worked for ' + $('#dashboard_today_hours').text() + ' hours today ' +
-                    'on my ' + $('#project_title').text() + ' project ' +
-                    'and reached ' + $('#daily_goal_percentage').text() + ' of my goal!'
-                ),
-            link: 'http://shaharyakir.github.io/',
-            picture: 'http://shaharyakir.github.io/images/logo.png'
-        },
-        function (response) {
-            if (response && response.post_id) {
-                console.log('Post was published.');
-            } else {
-                console.log('Post was not published.');
-            }
-        }
-    );
-}
-
-function loginToFacebookCallback() {
-
-    Parse.FacebookUtils.logIn(null, {
-        success: function (user) {
-            if (!user.existed()) {
-                console.log("User signed up and logged in through Facebook!");
-            } else {
-                console.log("User logged in through Facebook!");
-                facebookLogin = true;
-                onUserLogin();
-            }
-        },
-        error: function (user, error) {
-            console.log("User cancelled the Facebook login or did not fully authorize.");
-        }
-    });
-}

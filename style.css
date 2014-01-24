@@ -524,8 +524,10 @@ Chart
     background-image: url('images/connect_with_facebook_hover.png');
 }
 
-#login_with_nettime:hover{
+#back_to_login_with_facebook:hover,#login_with_nettime:hover{
     color:#ea3955;
+    text-decoration:underline;
+
 }
 
 
