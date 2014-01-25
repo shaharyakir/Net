@@ -58,6 +58,8 @@ that.CookieHandler = {
 }
 that.Session = {
     facebookLogin: false,
+    isFacebookUser: false,
+    userFullName: undefined,
     clear: function () {
 
         $('#user_log_out_panel').hide();
@@ -99,49 +101,48 @@ that.Session = {
             Parse.initialize("vnkcS0pKaV0JYhW37n7DI2JPpiAftf5b6WmXM0Kw", "bzqGddUaGZc7cjsp7RxJfsOVMQVFXGCMiKzxbZz5");
         }
     },
-    onUserLogin:function() {
-    $('#user_login_container').hide();
-    $('#projects_container').fadeIn(1000);
+    onUserLogin: function () {
+        $('#user_login_container').hide();
+        $('#projects_container').fadeIn(1000);
 
-    // TODO:improve
-    if (that.Session.facebookLogin === true) {
-        FB.api(
-            "/me?fields=name",
-            function (response) {
-                if (response && !response.error) {
-                    $('#current_user').text(response.name);
-                }
-            }
-        );
-    }
-    else {
-        $('#current_user').text(Parse.User.current().getUsername());
-    }
+        $('#current_user').text(this.userFullName);
+        $('#settings_panel').show();
+        $('#user_panel').show();
 
-    $('#settings_panel').show();
-    $('#user_panel').show();
-
-    var projectIdFromCookie = that.CookieHandler.readCookie(that.Constants.Cookies.COOKIE_CURRENT_PROJECT);
-    var projectTitleFromCookie = that.CookieHandler.readCookie(that.Constants.Cookies.COOKIE_CURRENT_PROJECT_TITLE);
-    var isProjectCached = ((projectIdFromCookie != "") && (projectTitleFromCookie != "") && (projectIdFromCookie != null) && (projectTitleFromCookie != null));
-    if (isProjectCached == true) {
-        projectTitleFromCookie = decodeURIComponent(projectTitleFromCookie);
-        that.Projects.onProjectLoad(projectIdFromCookie, projectTitleFromCookie);
-    }
-    else {
-        that.Projects.loadProjects();
-    }
-},
-    loadApplication:function() {
+        var projectIdFromCookie = that.CookieHandler.readCookie(that.Constants.Cookies.COOKIE_CURRENT_PROJECT);
+        var projectTitleFromCookie = that.CookieHandler.readCookie(that.Constants.Cookies.COOKIE_CURRENT_PROJECT_TITLE);
+        var isProjectCached = ((projectIdFromCookie != "") && (projectTitleFromCookie != "") && (projectIdFromCookie != null) && (projectTitleFromCookie != null));
+        if (isProjectCached == true) {
+            projectTitleFromCookie = decodeURIComponent(projectTitleFromCookie);
+            that.Projects.onProjectLoad(projectIdFromCookie, projectTitleFromCookie);
+        }
+        else {
+            that.Projects.loadProjects();
+        }
+    },
+    loadApplication: function () {
         $('#application').fadeIn(1000);
         that.Log.loadLogEntries();
         that.Session.updateAllObjects();
+    },
+    login: function () {
+        if (Parse.User.current() != null) {
+            that.Session.isFacebookUser = Parse.FacebookUtils.isLinked(Parse.User.current());
+            if (!this.isFacebookUser) {
+                this.userFullName = Parse.User.current().getUsername();
+                this.onUserLogin();
+            }
+            else {
+                that.Facebook.init().then(function () {
+                    that.Session.onUserLogin();
+                });
+            }
+        }
     }
-
 }
 that.Facebook = {
     init: function () {
-
+        var promise = $.Deferred();
         $.ajaxSetup({ cache: true });
         $.getScript('//connect.facebook.net/en_UK/all.js', function () {
             Parse.FacebookUtils.init({
@@ -151,33 +152,43 @@ that.Facebook = {
                 xfbml: true  // parse XFBML
             });
 
-            if (that.Session.facebookLogin === false) {
+            FB.getLoginStatus(function (response) {
+                /* if (response.status === 'connected') {
+                 var uid = response.authResponse.userID;
+                 var accessToken = response.authResponse.accessToken;
 
-                Parse.FacebookUtils.logIn(null, {
-                    success: function (user) {
-                        if (!user.existed()) {
-                            console.log("User signed up and logged in through Facebook!");
-                            that.Session.facebookLogin = true;
-                            that.Session.onUserLogin();
-                        } else {
-                            console.log("User logged in through Facebook!");
-                            that.Session.facebookLogin = true;
-                            that.Session.onUserLogin();
-                        }
-                    },
-                    error: function (user, error) {
-                        console.log("User cancelled the Facebook login or did not fully authorize.");
-                    }
-                });
-            }
-            else {
-                console.log("User was already logged in through Facebook! Proceeding to nettime login");
+                 } else if (response.status === 'not_authorized') {
+                 // the user is logged in to Facebook,
+                 // but has not authenticated your app
+                 } else {
+                 // the user isn't logged in to Facebook.
+                 }*/
                 that.Session.facebookLogin = true;
-                that.Session.onUserLogin();
-            }
+                if (response.status !== 'connected' || Parse.User.current() == null) {
+                    Parse.FacebookUtils.logIn(null, {
+                        success: function (user) {
+                            // can check here if user.existed()
+                            console.log("User logged in through Facebook!");
+                            that.Facebook.getFullName().then(function (name) {
+                                that.Session.userFullName = name;
+                                promise.resolve()
+                            });
+                        },
+                        error: function (user, error) {
+                            console.log("User cancelled the Facebook login or did not fully authorize.");
+                        }
+                    });
+                }
+                else {
+                    that.Facebook.getFullName().then(function (name) {
+                        that.Session.userFullName = name;
+                        promise.resolve()
+                    });
+                }
+            });
         });
 
-
+        return promise.promise();
     },
     postToFacebook: function () {
 
@@ -202,6 +213,19 @@ that.Facebook = {
                 }
             }
         );
+    },
+    getFullName: function () {
+        var promise = $.Deferred();
+        FB.api(
+            "/me?fields=name",
+            function (response) {
+               // console.log(response);
+                if (response && !response.error) {
+                    promise.resolve(response.name);
+                }
+            }
+        );
+        return promise.promise();
     }
 }
 that.Log = {
@@ -524,141 +548,421 @@ that.Chart = {
     weeklyChart: function (date) {
 
         var dps = [];
-        var manualDps = [];
+        var totalDps = [];
         var goalDps = [];
         var firstLap;
-        var manualLapCount = 0;
         var length = 0;
         var promise = $.Deferred();
+        var totalCount = 0;
 
         var dateToCheck = date ? date : that.Utils.Date.getShortDate();
         toggleLoading('#chart_week_chart_overlay', true);
 
         var start = that.Utils.Date.findFirstDateInTheWeek(dateToCheck);
         var end = that.Utils.Date.findLastDateInWeek(dateToCheck);
+        that.Laps.getLapTotalGroupedByDay(start, end).then(function (result) {
 
-        // TODO: handle a case when there's no first lap!!!
-        that.Laps.findFirstLap(start, end)  // Get the first lap (use it as the manual lap start time)
-            .then(function (result) {
-                if (result) {
-                    firstLap = result;
-                }
-                ;
-            })
-            .then(function () {
-                return that.Laps.getManualLapTotalLength(start, end);  // Get total manual lap time
-            })
-            .then(function (result) {
-                manualLapCount = result;
-                if (manualLapCount > 0) {
-                    length = manualLapCount;
-                    if (firstLap) {
-                        manualDps.push({x: firstLap, y: 0, markerColor: "yellow"});
-                        manualDps.push({x: firstLap, y: manualLapCount, markerColor: "yellow", indexLabel: "M"});
-                    }
-                }
-            })
-            .then(function () {
-                return that.Laps.getLaps(start, end);
-            })
-            .then(function (results) {
-                for (var i = 0; i < results.length; i++) {
-                    var object = results[i];
-                    var lapEnd = object.createdAt;
-                    var lapStart = new Date(lapEnd - (object.get("length") * 1000));
+            result.sort(function (a, b) {
+                a = new Date(a.date);
+                b = new Date(b.date);
+                return a < b ? -1 : a > b ? 1 : 0;
+            });
 
-                    var dp = {x: lapStart, y: length, markerType: "none"};
+            for (var i = 0; i < result.length; i++) {
+                var obj = result[i];
+                dps.push({x: obj.date, y: obj.length / 3600, markerType: "none"});
+                totalCount += (obj.length / 3600);
+                totalDps.push({x: obj.date, y: totalCount, markerType: "none"});
+            }
 
-                    // todo: consolidate points
-
-                    dps.push(dp);
-                    length += ((lapEnd - lapStart) / 1000 / 3600);
-                    length = Math.ceil(length * 1000) / 1000;
-                    dps.push({x: lapEnd, y: length, markerType: "none"});
-
-                    if (setting_show_breaks_on_graphs == true) {
-                        if (((lapStart - prevLapEnd) > (1000 * 300))) {
-                            dps[dps.length - 3].indexLabel = "SB";
-                            dps[dps.length - 3].markerColor = "red";
-                            dps[dps.length - 3].markerType = "circle";
-                            dps[dps.length - 2].indexLabel = "EB";
-                            dps[dps.length - 2].markerColor = "red";
-                            dps[dps.length - 2].markerType = "circle";
-                        }
-                    }
-                    var prevLapEnd = lapEnd;
-                }
-
-                dps.sort(function (a, b) {
-                    a = new Date(a.x);
-                    b = new Date(b.x);
-                    return a > b ? -1 : a < b ? 1 : 0;
-                });
-            }).then(function () {
-                return that.Goals.isWeeklyGoalSet(start);
-            })
-            .then(function (value) {
+            that.Goals.isWeeklyGoalSet(start).then(function (value) {
                 if (dps.length > 0 && value) {
                     var goal = value.get("goal") / 3600;
 
-                    goalDps.push({x: dps[0].x, y: goal});
-                    goalDps.push({x: dps[dps.length - 1].x, y: goal});
+                    goalDps.push({x: dps[0].x, y: goal, markerType: "none"});
+                    goalDps.push({x: dps[dps.length - 1].x, y: goal, markerType: "none"});
                 }
-            })
-            .then(function () {
-
-                var chartx = new CanvasJS.Chart("chart_week_chart",
-                    {
-                        backgroundColor: "#f8f8f8",
-                        zoomEnabled: true,
-                        height: 290,
-//                    width: 650,
-                        title: {
-                        },
-                        axisX: {
-                            valueFormatString: "DDD",
-                            interval: 1,
-                            intervalType: "day",
-                        },
-                        axisY: {
-                            includeZero: false,
-                            gridColor: "#f8f8f8",
-                            //valueFormatString: " "
-
-                        },
-                        data: [
-                            {
-                                type: "line",
-                                color: "#ea3955",
-                                dataPoints: dps
+            }).then(function () {
+                    var chartx = new CanvasJS.Chart("chart_week_chart",
+                        {
+                            backgroundColor: "#f8f8f8",
+                            zoomEnabled: true,
+                            height: 290,
+                            width: 650,
+                            title: {
                             },
-                            {
-                                type: "line",
-                                color: "#EAB608",
-                                dataPoints: manualDps
+                            axisX: {
+                                valueFormatString: "DDD",
+
                             },
-                            {
-                                type: "line",
-                                color: "#00CE72",
-                                dataPoints: goalDps
-                            }
-                        ]
-                    });
+                            axisY: {
+                                includeZero: false,
+                                gridColor: "#f8f8f8",
+                                //valueFormatString: " "
+
+                            },
+                            data: [
+                                {
+                                    //   color: "#ea3955",
+                                    dataPoints: dps
+                                },
+                                {
+                                    type: "line",
+                                    dataPoints: totalDps
+                                },
+                                {
+                                    type: "line",
+                                    color:"green",
+                                    dataPoints: goalDps
+                                }
+                            ]
+                        });
+
+                    if (dps.length > 0) {
+                        chartx.render();
+                    }
+                    else {
+                        $('#chart_week_chart').text("No data");
+                    }
+                    toggleLoading('#chart_week_chart_overlay', true);
+                    promise.resolve();
+                });
+
+        });
 
 
-                if (dps.length > 0) {
-                    chartx.render();
-                }
-                else {
-                    $('#chart_week_chart').text("No data");
-                }
-                toggleLoading('#chart_week_chart_overlay', true);
-                promise.resolve();
-            }
-        );
+        /*
+         // TODO: handle a case when there's no first lap!!!
+         that.Laps.findFirstLap(start, end)  // Get the first lap (use it as the manual lap start time)
+         .then(function (result) {
+         if (result) {
+         firstLap = result;
+         }
+         ;
+         })
+         .then(function () {
+         return that.Laps.getManualLapTotalLength(start, end);  // Get total manual lap time
+         })
+         .then(function (result) {
+         manualLapCount = result;
+         if (manualLapCount > 0) {
+         length = manualLapCount;
+         if (firstLap) {
+         manualDps.push({x: firstLap, y: 0, markerColor: "yellow"});
+         manualDps.push({x: firstLap, y: manualLapCount, markerColor: "yellow", indexLabel: "M"});
+         }
+         }
+         })
+         .then(function () {
+         return that.Laps.getLaps(start, end);
+         })
+         .then(function (results) {
+         for (var i = 0; i < results.length; i++) {
+         var object = results[i];
+         var lapEnd = object.createdAt;
+         var lapStart = new Date(lapEnd - (object.get("length") * 1000));
+
+         var dp = {x: lapStart, y: length, markerType: "none"};
+
+         // todo: consolidate points
+
+         dps.push(dp);
+         length += ((lapEnd - lapStart) / 1000 / 3600);
+         length = Math.ceil(length * 1000) / 1000;
+         dps.push({x: lapEnd, y: length, markerType: "none"});
+
+         if (setting_show_breaks_on_graphs == true) {
+         if (((lapStart - prevLapEnd) > (1000 * 300))) {
+         dps[dps.length - 3].indexLabel = "SB";
+         dps[dps.length - 3].markerColor = "red";
+         dps[dps.length - 3].markerType = "circle";
+         dps[dps.length - 2].indexLabel = "EB";
+         dps[dps.length - 2].markerColor = "red";
+         dps[dps.length - 2].markerType = "circle";
+         }
+         }
+         var prevLapEnd = lapEnd;
+         }
+
+         dps.sort(function (a, b) {
+         a = new Date(a.x);
+         b = new Date(b.x);
+         return a > b ? -1 : a < b ? 1 : 0;
+         });
+         }).then(function () {
+         return that.Goals.isWeeklyGoalSet(start);
+         })
+         .then(function (value) {
+         if (dps.length > 0 && value) {
+         var goal = value.get("goal") / 3600;
+
+         goalDps.push({x: dps[0].x, y: goal});
+         goalDps.push({x: dps[dps.length - 1].x, y: goal});
+         }
+         })
+         .then(function () {
+
+         var chartx = new CanvasJS.Chart("chart_week_chart",
+         {
+         backgroundColor: "#f8f8f8",
+         zoomEnabled: true,
+         height: 290,
+         //                    width: 650,
+         title: {
+         },
+         axisX: {
+         valueFormatString: "DDD",
+         interval: 1,
+         intervalType: "day",
+         },
+         axisY: {
+         includeZero: false,
+         gridColor: "#f8f8f8",
+         //valueFormatString: " "
+
+         },
+         data: [
+         {
+
+         color: "#ea3955",
+         dataPoints: dps
+         },
+         {
+         type: "line",
+         color: "#EAB608",
+         dataPoints: manualDps
+         },
+         {
+         type: "line",
+         color: "#00CE72",
+         dataPoints: goalDps
+         }
+         ]
+         });
+
+
+         if (dps.length > 0) {
+         chartx.render();
+         }
+         else {
+         $('#chart_week_chart').text("No data");
+         }
+         toggleLoading('#chart_week_chart_overlay', true);
+         promise.resolve();
+         }
+         );*/
         return promise.promise();
     },
     monthlyChart: function (date) {
+
+        var dps = [];
+        var totalDps = [];
+        var goalDps = [];
+        var firstLap;
+        var length = 0;
+        var promise = $.Deferred();
+        var totalCount = 0;
+
+        var dateToCheck = date ? date : that.Utils.Date.getShortDate();
+        toggleLoading('#chart_month_chart_overlay', true);
+
+        var start = that.Utils.Date.findFirstDateInMonth(dateToCheck);
+        var end = that.Utils.Date.findLastDateInMonth(dateToCheck);
+        that.Laps.getLapTotalGroupedByDay(start, end).then(function (result) {
+
+            result.sort(function (a, b) {
+                a = new Date(a.date);
+                b = new Date(b.date);
+                return a < b ? -1 : a > b ? 1 : 0;
+            });
+
+            for (var i = 0; i < result.length; i++) {
+                var obj = result[i];
+                if (obj.length>0){
+                dps.push({x: obj.date, y: obj.length / 3600, markerType: "none"});
+                totalCount += (obj.length / 3600);
+                totalDps.push({x: obj.date, y: totalCount, markerType: "none"});
+                }
+            }
+
+            that.Goals.isMonthlyGoalSet(start).then(function (value) {
+                if (dps.length > 0 && value) {
+                    var goal = value.get("goal") / 3600;
+
+                    goalDps.push({x: dps[0].x, y: goal, markerType: "none"});
+                    goalDps.push({x: dps[dps.length - 1].x, y: goal, markerType: "none"});
+                }
+            }).then(function () {
+                    var chartx = new CanvasJS.Chart("chart_month_chart",
+                        {
+                            backgroundColor: "#f8f8f8",
+                            zoomEnabled: true,
+                            height: 290,
+                            width: 650,
+                            title: {
+                            },
+                            axisX: {
+                                valueFormatString: "D",
+
+                            },
+                            axisY: {
+                                includeZero: false,
+                                gridColor: "#f8f8f8",
+                                //valueFormatString: " "
+
+                            },
+                            data: [
+                                {
+                                    //   color: "#ea3955",
+                                    dataPoints: dps
+                                },
+                                {
+                                    type: "line",
+                                    dataPoints: totalDps
+                                },
+                                {
+                                    type: "line",
+                                    color:"green",
+                                    dataPoints: goalDps
+                                }
+                            ]
+                        });
+
+                    if (dps.length > 0) {
+                        chartx.render();
+                    }
+                    else {
+                        $('#chart_month_chart').text("No data");
+                    }
+                    toggleLoading('#chart_month_chart_overlay', true);
+                });
+
+        });
+
+
+        /*
+         // TODO: handle a case when there's no first lap!!!
+         that.Laps.findFirstLap(start, end)  // Get the first lap (use it as the manual lap start time)
+         .then(function (result) {
+         if (result) {
+         firstLap = result;
+         }
+         ;
+         })
+         .then(function () {
+         return that.Laps.getManualLapTotalLength(start, end);  // Get total manual lap time
+         })
+         .then(function (result) {
+         manualLapCount = result;
+         if (manualLapCount > 0) {
+         length = manualLapCount;
+         if (firstLap) {
+         manualDps.push({x: firstLap, y: 0, markerColor: "yellow"});
+         manualDps.push({x: firstLap, y: manualLapCount, markerColor: "yellow", indexLabel: "M"});
+         }
+         }
+         })
+         .then(function () {
+         return that.Laps.getLaps(start, end);
+         })
+         .then(function (results) {
+         for (var i = 0; i < results.length; i++) {
+         var object = results[i];
+         var lapEnd = object.createdAt;
+         var lapStart = new Date(lapEnd - (object.get("length") * 1000));
+
+         var dp = {x: lapStart, y: length, markerType: "none"};
+
+         // todo: consolidate points
+
+         dps.push(dp);
+         length += ((lapEnd - lapStart) / 1000 / 3600);
+         length = Math.ceil(length * 1000) / 1000;
+         dps.push({x: lapEnd, y: length, markerType: "none"});
+
+         if (setting_show_breaks_on_graphs == true) {
+         if (((lapStart - prevLapEnd) > (1000 * 300))) {
+         dps[dps.length - 3].indexLabel = "SB";
+         dps[dps.length - 3].markerColor = "red";
+         dps[dps.length - 3].markerType = "circle";
+         dps[dps.length - 2].indexLabel = "EB";
+         dps[dps.length - 2].markerColor = "red";
+         dps[dps.length - 2].markerType = "circle";
+         }
+         }
+         var prevLapEnd = lapEnd;
+         }
+
+         dps.sort(function (a, b) {
+         a = new Date(a.x);
+         b = new Date(b.x);
+         return a > b ? -1 : a < b ? 1 : 0;
+         });
+         }).then(function () {
+         return that.Goals.isWeeklyGoalSet(start);
+         })
+         .then(function (value) {
+         if (dps.length > 0 && value) {
+         var goal = value.get("goal") / 3600;
+
+         goalDps.push({x: dps[0].x, y: goal});
+         goalDps.push({x: dps[dps.length - 1].x, y: goal});
+         }
+         })
+         .then(function () {
+
+         var chartx = new CanvasJS.Chart("chart_week_chart",
+         {
+         backgroundColor: "#f8f8f8",
+         zoomEnabled: true,
+         height: 290,
+         //                    width: 650,
+         title: {
+         },
+         axisX: {
+         valueFormatString: "DDD",
+         interval: 1,
+         intervalType: "day",
+         },
+         axisY: {
+         includeZero: false,
+         gridColor: "#f8f8f8",
+         //valueFormatString: " "
+
+         },
+         data: [
+         {
+
+         color: "#ea3955",
+         dataPoints: dps
+         },
+         {
+         type: "line",
+         color: "#EAB608",
+         dataPoints: manualDps
+         },
+         {
+         type: "line",
+         color: "#00CE72",
+         dataPoints: goalDps
+         }
+         ]
+         });
+
+
+         if (dps.length > 0) {
+         chartx.render();
+         }
+         else {
+         $('#chart_week_chart').text("No data");
+         }
+         toggleLoading('#chart_week_chart_overlay', true);
+         promise.resolve();
+         }
+         );*/
+        return promise.promise();
+    },
+    /*monthlyChart: function (date) {
 
         var dps = [];
         var manualDps = [];
@@ -790,7 +1094,7 @@ that.Chart = {
 
             }
         );
-    }
+    }*/
 }
 that.Stopwatch = {
     clocktimer: 0,
@@ -846,7 +1150,7 @@ that.Laps = {
             });
         }
     },
-    getLaps:function(startDate, endDate) {
+    getLaps: function (startDate, endDate) {
         var promise = $.Deferred();
         var Laps = Parse.Object.extend("Laps");
         var query = new Parse.Query(Laps);
@@ -869,7 +1173,7 @@ that.Laps = {
         });
         return promise.promise();
     },
-    findFirstLap:function(startDate, endDate){
+    findFirstLap: function (startDate, endDate) {
         var promise = $.Deferred();
         var Laps = Parse.Object.extend("Laps");
         var query = new Parse.Query(Laps);
@@ -890,7 +1194,7 @@ that.Laps = {
 
         return promise.promise();
     },
-    getManualLapTotalLength:function(startDate, endDate) {
+    getManualLapTotalLength: function (startDate, endDate) {
         var promise = $.Deferred();
         var Laps = Parse.Object.extend("Laps");
         var query = new Parse.Query(Laps);
@@ -916,41 +1220,85 @@ that.Laps = {
 
         return promise.promise();
     },
-    getTotalLapLengthByDate:function(startDate, endDate) {
+    getTotalDayLapLength: function (day) {
+        var startDate = day;
+        var endDate = that.Utils.Date.getEndOfDayDate(day);
+        return this.getTotalLapLengthByDate(startDate, endDate);
+    },
+    getTotalLapLengthByDate: function (startDate, endDate) {
 
-    var promise = $.Deferred();
+        var promise = $.Deferred();
 
-    if (endDate === undefined || endDate === startDate) {
-        endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + 1);
-    }
-    ;
+        var result = {};
+        result.startDate = new Date(startDate);
+        result.endDate = new Date(endDate);
 
-    var Laps = Parse.Object.extend("Laps");
-    var query = new Parse.Query(Laps);
-    //query.equalTo("date", startDate);
+        if (endDate === undefined || endDate === startDate) {
+            endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + 1);
+        }
+        ;
 
-
-    query.greaterThanOrEqualTo("createdAt", startDate);
-    query.lessThanOrEqualTo("createdAt", endDate);
-    query.equalTo("project", currentProject);
-    query.limit(1000);
-
-    query.find().then(function (results) {
-        var totalLength = 0;
+        var Laps = Parse.Object.extend("Laps");
+        var query = new Parse.Query(Laps);
+        //query.equalTo("date", startDate);
 
 
-        for (var i = 0; i < results.length; i++) {
-            var object = results[i];
-            totalLength += parseInt(object.get('length'));
+        query.greaterThanOrEqualTo("createdAt", startDate);
+        query.lessThanOrEqualTo("createdAt", endDate);
+        query.equalTo("project", currentProject);
+        query.limit(1000);
+
+        query.find().then(function (results) {
+            var totalLength = 0;
+
+
+            for (var i = 0; i < results.length; i++) {
+                var object = results[i];
+                totalLength += parseInt(object.get('length'));
+            }
+
+            result.length = totalLength;
+            promise.resolve(result);
+        });
+
+        return promise.promise();
+    },
+    getLapTotalGroupedByDay: function (startDate, endDate) {
+        var promise = $.Deferred();
+        var count = that.Utils.Date.dateDiff(endDate, startDate);
+        var asyncCount = count;
+        var dateToCheck = new Date(endDate);
+        var result = [];
+
+        for (var i = count; count >= 0; count--) {
+            var data = {};
+            data.date = new Date(dateToCheck);
+            result.push(data);
+            dateToCheck.setDate(dateToCheck.getDate() - 1);
+        }
+        dateToCheck = new Date(endDate);
+        count = that.Utils.Date.dateDiff(endDate, startDate);
+        for (var i = count; count >= 0; count--) {
+            that.Laps.getTotalDayLapLength(dateToCheck).then(function (obj) {
+
+                for (var j = 0; j < result.length; j++) {
+                    if (that.Utils.Date.dateDiff(result[j].date, obj.startDate) == 0) {
+                        result[j].length = obj.length;
+                    }
+                }
+
+                if (asyncCount == 0) {
+
+                    promise.resolve(result);
+                }
+                asyncCount--;
+            });
+            dateToCheck.setDate(dateToCheck.getDate() - 1);
         }
 
-        promise.resolve(totalLength);
-    });
-
-    return promise.promise();
-}
-
+        return promise.promise();
+    }
 }
 that.Utils = {
 
@@ -1059,7 +1407,7 @@ that.Utils = {
         },
         findLastDateInMonth: function (date) {
             var first = that.Utils.Date.findFirstDateInMonth(date);
-            var last = new Date();
+            var last = new Date(first);
             last.setMonth(first.getMonth() + 1);
             last.setDate(first.getDate() - 1);
             last.setFullYear(first.getFullYear());
@@ -1068,8 +1416,12 @@ that.Utils = {
         findLastDateInWeek: function (date) {
             date = new Date(date);
             var last = that.Utils.Date.findFirstDateInTheWeek(date);
-            last.setDate(date.getDate() + 6);
+            last.setDate(last.getDate() + 6);
             return last;
+        },
+        dateDiff: function (end, start) {
+            var datediff = end.getTime() - start.getTime(); //store the getTime diff - or +
+            return (Math.floor(datediff / (24 * that.Constants.General.HOUR * that.Constants.General.MILLISECONDS))); //Convert values to -/+ days and return value
         }
     },
     Math: {
@@ -1151,24 +1503,24 @@ that.Dashboard = {
 
         that.Goals.isDailyGoalSet().then(function () {
             toggleLoading('#dashboard_today_hours');
-            that.Laps.getTotalLapLengthByDate(today, todayEnd).then(function (totalLapLength) {
-                that.Dashboard.updateDashboardData(totalLapLength, '#dashboard_today')
+            that.Laps.getTotalLapLengthByDate(today, todayEnd).then(function (result) {
+                that.Dashboard.updateDashboardData(result.length, '#dashboard_today')
             });
 
         });
 
         that.Goals.isWeeklyGoalSet().then(function () {
             toggleLoading('#dashboard_week_hours');
-            that.Laps.getTotalLapLengthByDate(that.Utils.Date.findFirstDateInTheWeek(today), todayEnd).then(function (totalLapLength) {
-                that.Dashboard.updateDashboardData(totalLapLength, '#dashboard_week')
+            that.Laps.getTotalLapLengthByDate(that.Utils.Date.findFirstDateInTheWeek(today), todayEnd).then(function (result) {
+                that.Dashboard.updateDashboardData(result.length, '#dashboard_week')
             });
 
         });
 
         that.Goals.isMonthlyGoalSet().then(function () {
             toggleLoading('#dashboard_month_hours');
-            that.Laps.getTotalLapLengthByDate(that.Utils.Date.findFirstDateInMonth(today), todayEnd).then(function (totalLapLength) {
-                that.Dashboard.updateDashboardData(totalLapLength, '#dashboard_month')
+            that.Laps.getTotalLapLengthByDate(that.Utils.Date.findFirstDateInMonth(today), todayEnd).then(function (result) {
+                that.Dashboard.updateDashboardData(result.length, '#dashboard_month')
             });
         });
     },
@@ -1200,6 +1552,23 @@ that.Dashboard = {
         toggleLoading(dashboardJQueryElement + "_hours");
     }
 
+}
+that.Async = {
+    queue: function (func) {
+        $(document).queue('tasks', this.createTask(func));
+    },
+    queueCallback: function (func) {
+        this.queue(func);
+    },
+    dequeue: function () {
+        $(document).dequeue('tasks');
+    },
+    createTask: function (func) {
+        return function (next) {
+            func.then(function () {
+            });
+        }
+    }
 }
 
 function toggleLoading(jqueryElementName, isShowAndHide) {
@@ -1330,17 +1699,19 @@ $(document).ready(function () {
     that.jQuery.Timer.init();
     that.jQuery.Timer.setjQuery();
 
-    if (Parse.User.current() != null) {
+    that.Session.login();
 
-        that.Session.facebookLogin = Parse.FacebookUtils.isLinked(Parse.User.current());
+    /*    if (Parse.User.current() != null) {
 
-        if (that.Session.facebookLogin === true) {
-            that.Facebook.init();
-        }
-        else {
-            that.Session.onUserLogin();
-        }
-    }
+     that.Session.facebookLogin = Parse.FacebookUtils.isLinked(Parse.User.current());
+
+     if (that.Session.facebookLogin === true) {
+     that.Facebook.init();
+     }
+     else {
+     that.Session.onUserLogin();
+     }
+     }*/
     $("#updateDayGoal").click(function () {
         $('#updateDayGoalDiv').slideToggle();
         $(this).toggleClass("grayButton-sel").toggleClass('grayButton');
@@ -1371,21 +1742,21 @@ $(document).ready(function () {
 
     // Calls the that.Goals.setGoal function (d/w/m) respectively by the calling element
     /*$(".setGoalButton").click(function () {
-        var fn = $(this).attr('id');
-        fn = fn.replace('Button', '');
-        fn = "that.Goals." + fn;
-        window[fn]();
-    });*/
+     var fn = $(this).attr('id');
+     fn = fn.replace('Button', '');
+     fn = "that.Goals." + fn;
+     window[fn]();
+     });*/
 
-    $('#setDailyGoalButton').click(function(){
+    $('#setDailyGoalButton').click(function () {
         that.Goals.setDailyGoal();
     })
 
-    $('#setWeeklyGoalButton').click(function(){
+    $('#setWeeklyGoalButton').click(function () {
         that.Goals.setWeeklyGoal();
     })
 
-    $('#setMonthlyGoalButton').click(function(){
+    $('#setMonthlyGoalButton').click(function () {
         that.Goals.setMonthlyGoal();
     })
 
@@ -1452,7 +1823,7 @@ $(document).ready(function () {
             else {
                 Parse.User.logIn($('#username_input').val(), "password").then(function () {
                     toggleLoading($('#login_button'));
-                    that.Session.onUserLogin();
+                    that.Session.login();
                 });
             }
         });
@@ -1565,7 +1936,7 @@ $(document).ready(function () {
         date = that.Utils.Date.getShortDate(date);
         $('#chart_today_date').text(date);
         timeOut = setTimeout(function () {
-           that.Chart.dailyChart(date)
+            that.Chart.dailyChart(date)
         }, that.Constants.General.CLICK_TIMEOUT);
     });
 
@@ -1699,7 +2070,9 @@ $(document).ready(function () {
 
     $('#facebook_icon_large').click(function () {
         toggleLoading('#facebook_icon_large');
-        that.Facebook.init();
+        that.Facebook.init().then(function () {
+            that.Session.onUserLogin();
+        });
     });
 });
 
